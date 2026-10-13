@@ -10,7 +10,7 @@ obj/
 SkyrimMCPPlugin/build/
 SkyrimMCPPlugin/output/
 
-# CommonLibSSE-NG (large dependency, cloned locally)
+# Native SDK checkouts (large dependencies, cloned locally)
 SkyrimMCPPlugin/extern/
 
 # IDE
@@ -32,3 +32,6 @@ Thumbs.db
 *.cer
 *.snk
 papyrus_catalog.json
+
+# Openspec
+openspec/

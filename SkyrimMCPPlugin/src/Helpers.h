@@ -187,17 +187,26 @@ namespace SkyrimMCP::Helpers {
     // ==================== Console Command Execution ====================
     //
     // Console command execution approach adapted from ConsoleUtilSSE by VersuchDrei
-    // (https://github.com/VersuchDrei/ConsoleUtilSSE, MIT License)
+    // (https://github.com/VersuchDrei/ConsoleUtilSSE/tree/0eb69c6c0d7366065f2408180216ec6cd8a40d5e, MIT)
     //
-    // Key insight: CommonLibSSE-NG's Script::CompileAndRun() uses a relocation that
-    // crashes on game versions >= 1.6.1130. ConsoleUtilSSE uses a version-conditional
-    // relocation (441582 for patch >= 1130) that works correctly.
+    // Keep the ConsoleUtilSSE compiler entry point. The 1.6.1130 boundary
+    // compares the whole version: 1.7.x has patch numbers below 1130.
+    constexpr std::uint64_t ConsoleCompilerAEId(REL::Version version) noexcept {
+        return version < REL::Version{1, 6, 1130, 0} ? 21890 : 441582;
+    }
+
+    // Selector regression checks, not executable-backed or in-game verification.
+    static_assert(ConsoleCompilerAEId({1, 6, 640, 0}) == 21890);
+    static_assert(ConsoleCompilerAEId({1, 6, 1130, 0}) == 441582);
+    static_assert(ConsoleCompilerAEId({1, 6, 1170, 0}) == 441582);
+    static_assert(ConsoleCompilerAEId({1, 7, 99, 0}) == 441582);
+    static_assert(ConsoleCompilerAEId({1, 7, 104, 0}) == 441582);
 
     inline void CompileAndRunImpl(RE::Script* script, RE::ScriptCompiler* compiler,
         RE::COMPILER_NAME name, RE::TESObjectREFR* targetRef) {
         using func_t = decltype(CompileAndRunImpl);
         REL::Relocation<func_t> func{
-            RELOCATION_ID(21416, REL::Module::get().version().patch() < 1130 ? 21890 : 441582)
+            RELOCATION_ID(21416, ConsoleCompilerAEId(REL::Module::get().version()))
         };
         return func(script, compiler, name, targetRef);
     }

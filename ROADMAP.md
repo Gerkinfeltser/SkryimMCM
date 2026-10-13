@@ -1,6 +1,6 @@
 # Skyrim MCP — Feature Roadmap
 
-Based on a comprehensive analysis of CommonLibSSE-NG's API surface (~200+ classes, 50+ singletons).
+Historical feature analysis of CommonLibSSE-NG's API surface (~200+ classes, 50+ singletons). Current MinLL migration status and verification are recorded in README.md; this roadmap is not a current dependency or compatibility oracle.
 
 ## Current State (v0.2)
 

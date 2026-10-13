@@ -1,6 +1,6 @@
 {
   "projectName": "Skyrim MCP",
-  "lastUpdated": "2026-03-24",
+  "lastUpdated": "2026-10-13",
   "nextTestSession": {
     "label": "Unlimited Args + Muted Events + SearchForms Expanded (needs game restart)",
     "requiresGameRestart": [
@@ -129,10 +129,10 @@
     ]
   },
   "summary": {
-    "totalItems": 113,
+    "totalItems": 114,
     "completed": 80,
     "completedPartial": 3,
-    "implementedUntested": 2,
+    "implementedUntested": 3,
     "inProgress": 0,
     "planned": 45,
     "bugs": 10
@@ -1510,6 +1510,83 @@
         {
           "datetime": "2026-03-23T20:01",
           "note": "Implemented. Needs game restart to test."
+        }
+      ]
+    },
+    {
+      "id": "INFRA-015",
+      "type": "infrastructure",
+      "status": "mostly-complete",
+      "title": "Pinned MinLL/CommonLibVR migration — initial Skyrim 1.7.104 acceptance",
+      "description": "Pinned v4.39.5 migration/offline gates and required1.7.104-only runtime scenarios passed for installed STD/iSTD_SkyrimMCM-skylink candidate. Unchanged player/inventory/cell/NPC/quest/menu/combat routes, console/Papyrus/HUD/God/equipment/death and bounded asynchronous save/exact reload exercised. Positive native group/API exactFF000E54 target and independent quest engine stage/completion matched. Exact rollback restored tested baseline/counts/charge and original GodOFF; saves unchanged, game open. Scoped coverage, not every tool/event; damage immunity and controlled single-attack timing/stance unverified. Mostly-complete because historical prior-installed-DLL backup provenance remains unverified (OpenSpec5.2); no archive/publication, .NET license notices remain publication concern. Earlier1.7.99/1.6.x deferred.",
+      "evidence": "README.md#Migration evidence — 2026-10-12",
+      "history": [
+        {
+          "datetime": "2026-10-12T22:30+00:00",
+          "note": "Built and packaged locally; actor dispatch failing-before/passing-after, linked metadata, artifact hash equality, signature verification, real stdio initialization/tool enumeration and release failure handling passed. Owner-local fork signing key remains ignored/private. OpenSpec remains intentionally ignored; all game rows and missing-executable gates remain open."
+        },
+        {
+          "note": "Owner approved 1.7.104 only for now. Current offline candidate gates are accepted; missing 1.6.1130/1.7.99 evidence is deferred, not falsely verified. OpenSpec/docs/package runtime claims revised; mandatory 1.7.104 game scenarios remain open."
+        },
+        {
+          "datetime": "2026-10-13T19:01+00:00",
+          "note": "Owner installed and started candidate. Verified loaded native path, installed native/server hashes and exact save/co-save backup equality. Actual stdio MCP read-only background smoke passed connection, readiness, player/inventory/cell queries; saved header and live name/level/location agreed. No game mutations, focus change or saves; owned server exited 0 and Skyrim left open. Raw local evidence: SkyrimMCPPlugin/build/runtime-smoke-20261013T190120Z/mcp-readonly-smoke.json. Status remains implemented-untested until mandatory runtime acceptance completes."
+        },
+        {
+          "datetime": "2026-10-13T19:13+00:00",
+          "note": "Console player.getav health returned GetActorValue: Health >> 500.00 matching fresh player health. Live-discovered Math.abs(float) dispatched through migrated VM accessor and returned expected callback 12.5 for -12.5. HUD notification not sent pending visible observation readiness. No input/focus command, God Mode, combat setup or saves; original save/co-save unchanged; owned server exited0 and game left open. Foreground handles differed, so continuous focus isolation is not claimed. Raw evidence: SkyrimMCPPlugin/build/runtime-smoke-20261013T190120Z/mcp-console-papyrus.json."
+        },
+        {
+          "note": "HUD presentation PASS (owner-observed). First notification was unobserved because owner was not watching; owner requested repeat after expected top-left message was explained. After five-second delay, SkyLink HUD test 2 dispatched once at2026-10-13T19:23:30Z, MCP success and owned server exit0 observed; owner confirmed Saw it! No focus/input commands or other game mutations. Raw evidence: SkyrimMCPPlugin/build/runtime-smoke-20261013T190120Z/mcp-hud-owner-repeat.json."
+        },
+        {
+          "datetime": "2026-10-13T19:27+00:00",
+          "note": "God Mode bounded state test blocked before mutation: isPaused true, safe true. Read-only engine observation at verified1.7.104 RVA0x3244C86 showed initial false/byte0; zero toggles, focus/input, damage/combat or save operations sent. Pushover blocking alert delivered. Owned server exit0, process read handle closed, original ESS/SKSE unchanged and Skyrim left open. Pause cause unknown; resume after fresh readiness. Evidence: SkyrimMCPPlugin/build/runtime-smoke-20261013T190120Z/mcp-godmode-preflight-blocked.json."
+        },
+        {
+          "datetime": "2026-10-13T19:31+00:00",
+          "note": "Owner-authorized God Mode on/off resumed after the requested five-second delay and fresh unpaused readiness. Exactly two MCP toggles returned On/true and Off/false; independent ReadProcessMemory at verified RVA 0x3244C86 observed byte 0→1→0, original off state restored. Tool issued built-in On/Off notifications; visible presentation awaits owner confirmation. No damage/combat/saves/input/focus commands. Foreground endpoints were the game HWND, not proof of unfocused mutation. Original save pair unchanged, server exit 0/read handle closed and game left open. Raw evidence: SkyrimMCPPlugin/build/runtime-smoke-20261013T190120Z/mcp-godmode-on-off.json."
+        },
+        {
+          "datetime": "2026-10-13T19:36+00:00",
+          "note": "Owner-requested staged test: unpaused background God Mode ON passed. One MCP toggle and independent engine byte 0→1; all nine foreground samples non-game, no activation/input commands. God Mode intentionally left ON awaiting owner's foreground/ready-for-off handoff; restoration and Off notification observation pending for this cycle. Save hashes unchanged; owned server exit 0/read handle closed. Raw evidence: SkyrimMCPPlugin/build/runtime-smoke-20261013T190120Z/mcp-godmode-background-on.json. Qualification limited to this operation/build/profile/window."
+        },
+        {
+          "datetime": "2026-10-13T19:37+00:00",
+          "note": "After owner ready-for-off, foreground and unpaused readiness confirmed; exactly one toggle returned God Mode Off/false and independent engine byte 1→0 restored initial off state. Visible Off notification awaits owner observation. Original save pair unchanged, owned server exit 0/read handle closed, no damage/save/load/activation/input commands. The earlier background-on qualification remains bounded to its sampled operation/build/profile window. Raw evidence: SkyrimMCPPlugin/build/runtime-smoke-20261013T190120Z/mcp-godmode-foreground-off.json."
+        },
+        {
+          "note": "Owner confirmed seeing God Mode Off during the staged foreground-off step. Off notification presentation PASS (owner-observed); background-on engine transition and foreground-off restoration had independently passed. Current engine state off; no damage-immunity test. The staged cycle is complete, with events/actor-state/save-reload acceptance still pending."
+        },
+        {
+          "note": "Read-only actor/equipment baseline executed successfully after correcting a local harness lookup to live get_nearby_np_cs (initial local KeyError sent zero game calls; stop alert delivered). Player and Anoriath detail/list identities and living/idle flags consistent; combat false; Footwraps feet mask128 observed. This does not prove independently known dead/active-combat/non-empty-group states. No mutations, input or saves; original pair unchanged, owned server exit0. Menu-open events unsupported; reversible Footwraps equipment trigger proposed, awaiting agreement. Raw evidence: SkyrimMCPPlugin/build/runtime-smoke-20261013T190120Z/mcp-actor-event-baseline-corrected.json."
+        },
+        {
+          "datetime": "2026-10-13T19:56:13+00:00",
+          "note": "Owner-approved agent-run equipment event block PASS: Footwraps unequip/re-equip exact console commands each once, equipped state removal then original set restored, count1→1, two equip events0003CA00 false then true. Save pair unchanged, owned server exit0, same game running; no save/focus/input. Initial baseline poll exceeded local Python client's64KiB line limit before any mutation; alert delivered and disconnected. Corrected local4MiB client captured fresh baseline and passed; no native/server code change. Raw evidence: SkyrimMCPPlugin/build/runtime-smoke-20261013T190120Z/mcp-equipment-events-corrected.json. Positive dead/combat/group and save/reload fixtures still pending; all17 event types not claimed."
+        },
+        {
+          "datetime": "2026-10-13T21:08:49+00:00",
+          "note": "Protected disposable fixture stopped before kill: QASmoke00032AE7 actually empty, temporary Mudcrab00021875/FF000E86 alive GetDead0.00, one StartCombat yielded inCombattrue but no group/targets within12seconds. Failure alert delivered; nullable fixture/accessor/ABI cause unresolved. Owner selected Restore now. Fresh checkpoint Skylink-migration-precombat-20261013T202221Z ESS/SKSE created/preserved and exact load matched character/cell/values/gear/queried inventory counts; strict local Z assertion stopped on -0.7353515625 delta, recorded without reload retry/position correction. Original GodOFF subsequently restored independently1→0. Original/new saves unchanged, servers exit0, game open. Eight SkyrimNet DBs read-only online-backed-up before reload, not claimed unchanged afterward. Raw evidence in runtime-smoke-20261013T190120Z: mcp-protected-actor-fixture.json, mcp-precombat-checkpoint.json, mcp-precombat-checkpoint-recovery.json, mcp-precombat-recovery-completed.json, external-prereload-backup.json."
+        },
+        {
+          "note": "Exact1.7.104 static PlayerCharacter vtable inspection identifies D4 GetCombatGroup as native load[this+9E0], D5 setter to same field and E3 separate combat bit[this+BEB]. Disconfirms wrong/inherited-null getter slot hypothesis; no source change justified. Nullable player group lifecycle/fixture engagement or installed hooks remain unknown; no positive group or death pass. Protected checkpoint safely restored and GodOFF. Evidence: runtime-smoke-20261013T190120Z/native-player-combat-group-static.json."
+        },
+        {
+          "datetime": "2026-10-13T21:35:33+00:00",
+          "note": "Revised native background test: MudcrabFF000E07 known death PASS via API isDead false→true, GetDead0→1, exact deadtrue event. Distinct FF000DD3: player StartCombat only dispatch observed, no player bit/group change; enemy StartCombat yielded native/API combat-bit false→true→false, all native group samples0 and no player combat-start event. Group omission consistent with real null pointer; no positive-group pass or speculative patch. Temporary-only cleanup and exact fresh checkpoint Skylink-migration-retry-20261013T213036Z recovery PASS: tested identity/cell/values/gear/counts, GodOFF1→0 independent, source saves unchanged, servers exit0, game open. All200 foreground samples non-game; no input/activation. Eight external DBs snapshotted before test and reload. Raw: runtime-smoke-20261013T190120Z/mcp-revised-actor-checkpoint.json, mcp-revised-death-fixture.json, mcp-revised-player-combat-fixture.json, mcp-revised-actor-recovery.json."
+        },
+        {
+          "datetime": "2026-10-13T21:42:56+00:00",
+          "note": "Normal-attack follow-up staged only, awaiting owner foreground/normal-camera readiness before capture and one attack. Fresh checkpoint Skylink-migration-attack-20261013T214120Z plus external snapshots preserved. Verified temporary MudcrabFF000E54 health1000 (baseMax55) moved nearby17.57 in empty QASmoke, GodguardON independently, native player combat bitfalse/groupnull. Vanity camera owner note recorded; setting unchanged. Current staged GodON supersedes prior completed GodOFF until exact rollback. No attack observed and no StartCombat. Raw: runtime-smoke-20261013T190120Z/mcp-normal-attack-checkpoint.json and mcp-normal-attack-fixture-setup.json."
+        },
+        {
+          "datetime": "2026-10-13T21:55:07+00:00",
+          "note": "Supersedes staged GodON state. Owner reported crouching and repeated accidental pre-cue hits; controlled single standing attack aborted before capture, no cue sent. Positive group query independently PASS: native player group0x1f501781d80/combatbittrue, API inCombattrue/targetCount1/exact targetFF000E54, separate NPC living/combat/health973.8699951171875/max55 agreement. Only verified temporary actor killed, combat idle. Fresh eight-DB online snapshots before exact Skylink-migration-attack-20261013T214120Z reload; tested original identity/cell/values/gear/counts/charge100 restored, position delta0 in this observation, original GodOFF independently1→0. Source Skylink-test-01/fresh checkpoint hashes unchanged, server exit0, game left open; no agent focus/raw input or vanity setting changes. Restarted client first failed locally on wrong server path before any game command; alert delivered, discovered/hash-verified path completed recovery. Remaining spec-required quest-query consumer evidence, no new gameplay authorized. Raw: runtime-smoke-20261013T190120Z/mcp-normal-attack-aborted.json, mcp-normal-attack-recovery.json, mcp-normal-attack-recovery-completed.json."
+        },
+        {
+          "datetime": "2026-10-13T22:04:31+00:00",
+          "note": "Owner-authorized read-only quest scenario PASS: unchanged C# get_quest_info returned Before the Storm0004E50D stage23/completedfalse and objective records. Independent engine console getstage23.00/GetQuestCompleted0.00 matched. Same original cell, God byte0 before/after, no quest mutation/save/load/focus/input; owned server exit0, same game open. Required1.7.104 runtime scenarios now passed for scoped candidate/profile; no all-tool/all-event or earlier-version claim. Historical prior-installed-DLL backup gap remains unverified/OpenSpec5.2 partial; no archive/publication performed, pre-existing .NET notices still publication concern. OpenSpec intentionally ignored. Raw: SkyrimMCPPlugin/build/runtime-smoke-20261013T190120Z/mcp-quest-query-acceptance.json."
         }
       ]
     }

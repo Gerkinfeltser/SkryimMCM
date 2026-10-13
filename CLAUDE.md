@@ -29,7 +29,7 @@ Claude Desktop <--stdio/MCP--> C# MCP Server <--named pipe--> SKSE Plugin (insid
 - **EventSystem.h/cpp** — 17 game event sinks with noise filtering
 - **TaskQueue.h/cpp** — Marshals pipe-thread calls to game thread via SKSE task interface
 
-Uses CommonLibSSE-NG (main branch, local shallow clone in `extern/`), nlohmann-json, spdlog, fmt. Statically linked (x64-windows-static).
+Uses source-built MinLL/CommonLibVR v4.39.5 at `550cc4fb9114649dcf526d1f3d73d710c5d7003b` in `SkyrimMCPPlugin/extern/CommonLibVR`, nlohmann-json, spdlog, fmt and DirectXTK. Static CRT and `x64-windows-static`. SE/AE enabled; VR, SDK tests, Xbyak and prebuilt SDK routes disabled.
 
 ### C# MCP Server (`SkyrimMCP/` — .NET 10)
 - **Program.cs** — MCP server host, registers IPipeClient singleton, auto-discovers tools
@@ -49,24 +49,31 @@ Uses CommonLibSSE-NG (main branch, local shallow clone in `extern/`), nlohmann-j
 ## Build Commands
 
 ```powershell
-# IMPORTANT: Set vcpkg root (VS Dev PowerShell uses its own bundled copy otherwise)
-$env:VCPKG_ROOT = "C:\vcpkg"
+# From repository root; VS2022 Community C++ workload and .NET 10 SDK.
+$env:VCPKG_ROOT = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\vcpkg"
 
-# C++ plugin — only need --preset default when CMakeLists/vcpkg.json/CMakePresets.json change
-cmake --preset default
-cmake --build X:\_work\skyrim_mcp\SkyrimMCPPlugin\build --config Release
+# One-time pinned checkout, preserving any existing user-owned checkout.
+git clone --depth 1 --branch v4.39.5 --recurse-submodules --shallow-submodules https://github.com/MinLL/CommonLibVR.git SkyrimMCPPlugin/extern/CommonLibVR
 
-# C# MCP server — close Claude Desktop first (exe is locked while running)
-dotnet build X:\_work\skyrim_mcp\SkyrimMCP
+Push-Location SkyrimMCPPlugin
+cmake --preset default -B build/minll-candidate
+cmake --build build/minll-candidate --config Release --parallel 2
+Pop-Location
 
-# Deploy DLL to Skyrim
-copy X:\_work\skyrim_mcp\SkyrimMCPPlugin\output\SkyrimMCPPlugin.dll "C:\Steam\steamapps\common\Skyrim Special Edition\Data\SKSE\Plugins\" -Force
+# Requires an owner-local SkyrimMCP/SkyrimMCP.snk; never overwrite/publish the key.
+dotnet build .\SkyrimMCP -c Release
 
-# Release build for Nexus
-.\build_release.ps1 -Version "1.0.0"
+# Uses the default build tree and a new output directory; never installs.
+.\build_release.ps1 -Version "1.0.0" -OutputDir "release-minll-candidate"
 ```
 
-**Requires:** Visual Studio 2022 C++ workload, CMake 3.21+, vcpkg at `C:\vcpkg`, .NET 10 SDK
+**Native profile:** VS2022 Community selected by the preset; CMake pins vcpkg to that instance before `project()` so regeneration cannot select a newer VS installation. Both SDK and plugin use flags-off Release `/Od /Ob0 /DNDEBUG`, static CRT, and C++23 (fixed where available, `/std:c++23preview` otherwise). vcpkg baseline is `ee12231b20c95013c6638d845d04c91559a1d1ff`.
+
+**ABI/provenance:** require the exact clean MIT SDK checkout, no imported/prebuilt library, and the fingerprint-guarded non-VR `TESObjectREFR` overlay in SDK/PCH/plugin/PCH include views. `src/PCH.h` supplies the SDK context and string-view literal required by generated metadata. Do not edit the dependency header in place or disable optimization for only one native target.
+
+**Acceptance:** owner-approved initial candidate/runtime acceptance is 1.7.104.0 only. Offline gates passed; candidate ready for separately authorized installation/testing, not runtime-verified. Earlier 1.7.99.0/1.6.x checkpoints are deferred/unverified, not current blockers; preserve existing selector behavior without adding a whitelist. No VR/future-version claim. See README's evidence. Never install, launch the game or publish verified compatibility without corresponding authorization and acceptance.
+
+**Fork signing:** the upstream private key is not in source. A fresh fork can use an owner-local 2048-bit key from `sn -k 2048 SkyrimMCP/SkyrimMCP.snk`; check absence first and preserve an existing key. `.snk` files are already ignored. The resulting strong-name identity is fork-local; the stdio/MCP and pipe contracts are unchanged.
 
 ## Protocol
 
@@ -77,26 +84,29 @@ Response: `{"id":"uuid","success":bool,"data":{},"error":"..."}`
 
 ## Key Technical Decisions
 
-- **Console commands:** Use ConsoleUtilSSE-style `CompileAndRunImpl` with `RELOCATION_ID(21416, patch < 1130 ? 21890 : 441582)`. Credit: VersuchDrei/ConsoleUtilSSE (MIT License). CommonLibSSE-NG's built-in CompileAndRun crashes on Skyrim >= 1.6.1130.
+- **Console commands:** keep the historical MIT ConsoleUtilSSE-style `CompileAndRunImpl` and `RELOCATION_ID(21416, ConsoleCompilerAEId(version))`. Compare the complete `REL::Version` with 1.6.1130.0, not its patch component: AE ID 21890 before that boundary, 441582 afterward. The original patch-only predicate incorrectly selected 21890 on 1.7.x. Static assertions prove selector logic, not executable mapping or runtime behavior.
 - **NPC targeting:** Use dot-notation `refId.command` (e.g., `FE124B0E.kill`). The `prid` command does NOT persist between separate ExecuteConsoleCommand calls.
 - **Thread safety:** All game API calls go through TaskQueue to run on the game thread. Only `ping`, `poll_events`, and Papyrus catalog operations are handled directly on the pipe thread.
 - **Papyrus VM calls:** DispatchStaticCall must NOT go through TaskQueue (deadlock). Called from pipe thread, callback fires on game thread.
 - **SEH crash protection:** `__try/__except` around CompileAndRun catches access violations safely.
 - **Static linking:** `x64-windows-static` vcpkg triplet required — dynamic linking causes SKSE load failure (0x0000007E).
-- **CommonLibSSE-NG includes:** Must come BEFORE any Windows API headers. Use `void*` for HANDLE in headers, include `<windows.h>` only in .cpp files after CommonLibSSE.
+- **CommonLib includes:** must come BEFORE Windows API headers; the plugin PCH enforces the SDK context first. Use `void*` for HANDLE in headers and include `<windows.h>` only in .cpp files after CommonLib.
 - **Async save:** Fire-and-forget from Protocol layer — BGSSaveLoadManager::Save() blocks game thread for 10+ seconds with heavy mod lists.
 - **Actor polymorphism:** `Helpers::ResolveActor(refId)` returns player if empty, specific actor by FormID otherwise. Used by GetInventory, GetFactions, SetActorValue.
 - **Game safety checker:** `Helpers::CheckGameSafety()` detects loading, kill moves, saves. Functions like ToggleImmortalMode use it for fallback strategies.
 
-## Key API Patterns (CommonLibSSE-NG main branch)
+## Key API Patterns (pinned MinLL/CommonLibVR v4.39.5)
 
 - Actor values: `AsActorValueOwner()->GetActorValue()`, not `Actor::GetActorValue()`
 - Base actor value: `GetBaseActorValue()`, not `GetPermanentActorValue()`
 - Quest objectives: use `state` field, not `IsCompleted()`
 - Quest aliases: use `GetVMTypeID() == BGSRefAlias::VMTYPEID` with `static_cast`, not `dynamic_cast`
-- Plugin entry: `SKSEPluginInfo()` / `SKSEPluginLoad()` macros, not manual constinit
+- Plugin metadata: one declaration generated by `add_commonlibsse_plugin(... USE_ADDRESS_LIBRARY ...)`, Independent layout, raw compatibility fields `0x1`/`0x3`, minimum SKSE 0. Retain `SKSEPluginLoad()` in Main; derive log version from `PluginDeclaration::GetSingleton()`.
 - Logging: needs `#include <spdlog/sinks/basic_file_sink.h>`
-- Always grep actual headers in `extern/CommonLibSSE-NG/include/` when in doubt
+- Papyrus VM implementation: `vm->GetImpl()`, not the removed direct `vm->impl`; preserve pipe-thread dispatch and callback/timeout behavior.
+- Armor slot mask: `GetSlotMask().underlying()` preserves the unsigned 32-bit JSON field.
+- HUD notifications: `RE::SendHUDMessage::ShowHUDMessage()`, not `RE::DebugNotification()`.
+- Inspect actual headers under `SkyrimMCPPlugin/extern/CommonLibVR/include/` when in doubt. `openspec/` is intentionally ignored by the owner; do not unignore or force-add it. Durable candidate evidence belongs in README and project tracking.
 
 ## Project Tracking
 

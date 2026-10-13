@@ -1,6 +1,6 @@
 # SkyLink AI
 
-A Model Context Protocol (MCP) server that lets AI assistants (Claude, etc.) interact directly with Skyrim SE/AE's runtime engine. 74 tools for reading and modifying game state in real time — player stats, inventory, quests, NPCs, world interaction, combat, and more.
+A Model Context Protocol (MCP) server that lets AI assistants (Claude, etc.) interact directly with Skyrim SE/AE's runtime engine. 87 tools for reading and modifying game state in real time — player stats, inventory, quests, NPCs, world interaction, combat, and more.
 
 ## Architecture
 
@@ -8,13 +8,13 @@ A Model Context Protocol (MCP) server that lets AI assistants (Claude, etc.) int
 Claude Desktop <--stdio/MCP--> C# MCP Server <--named pipe--> SKSE Plugin (inside Skyrim)
 ```
 
-**SKSE Plugin** (C++ DLL) — runs inside Skyrim's process via SKSE. Uses CommonLibSSE-NG for native engine access. Exposes 74 game actions over a named pipe (`\\.\pipe\SkyrimMCP`).
+**SKSE Plugin** (C++ DLL) — runs inside Skyrim's process via SKSE. Uses source-built [MinLL/CommonLibVR](https://github.com/MinLL/CommonLibVR) v4.39.5 for native SE/AE engine access. Exposes game actions over the unchanged named pipe (`\\.\pipe\SkyrimMCP`).
 
-**C# MCP Server** (.NET 10) — bridges Claude Desktop (stdio MCP) and the SKSE plugin (named pipe). 74 MCP tools auto-discovered via `[McpServerTool]` attributes.
+**C# MCP Server** (.NET 10) — bridges Claude Desktop (stdio MCP) and the SKSE plugin (named pipe). 87 MCP tools auto-discovered via `[McpServerTool]` attributes.
 
 ## Features
 
-### 74 Game Actions
+### Game Tools
 
 | Category | Tools |
 |----------|-------|
@@ -44,11 +44,13 @@ Claude Desktop <--stdio/MCP--> C# MCP Server <--named pipe--> SKSE Plugin (insid
 ## Requirements
 
 - **Windows 10 or 11**
-- **Skyrim SE or AE** (v1.6.1130+)
+- **Skyrim SE/AE 1.7.104.0** — owner-approved initial acceptance/testing target; in-game verification pending
 - **SKSE64** ([skse.silverlock.org](https://skse.silverlock.org/))
 - **Address Library for SKSE** ([Nexus](https://www.nexusmods.com/skyrimspecialedition/mods/32444))
 - **.NET 10 Runtime** ([download](https://dotnet.microsoft.com/download/dotnet/10.0))
 - **Claude Desktop** ([claude.ai/desktop](https://claude.ai/desktop))
+
+This branch is not an installed or runtime-certified release. VR, future 1.7.x versions, and older runtimes that metadata may permit loading are not covered by its support claim. Installation and game testing require separate authorization; loader acceptance is not evidence of compatibility.
 
 ## Installation
 
@@ -91,32 +93,183 @@ Replace `<SKYRIM_PATH>` with your Skyrim installation path.
 "What Papyrus functions does the Experience mod expose?"
 ```
 
-With 74 tools covering player state, inventory, quests, NPCs, world interaction, combat, economy, magic, events, and a Papyrus VM bridge to 3,000+ mod functions — if Skyrim can do it, Claude can probably help.
+With 87 tools covering player state, inventory, quests, NPCs, world interaction, combat, economy, magic, events, and a Papyrus VM bridge to 3,000+ mod functions — if Skyrim can do it, Claude can probably help.
 
 See **[USAGE.md](USAGE.md)** for the full tool reference and advanced features.
 
 ## Building from Source
 
+The audited profile is VS2022 Community, source-built SDK and plugin, SE/AE enabled, VR/tests/Xbyak disabled, static CRT/triplet, and Release `/Od /Ob0 /DNDEBUG`. C++23 is fixed where supported, otherwise `/std:c++23preview`. The preset selects the same VS instance for vcpkg even during automatic regeneration.
+
 ```powershell
-# Prerequisites: VS2022 C++ workload, CMake 3.21+, vcpkg, .NET 10 SDK
+# Prerequisites: VS2022 Community C++ workload, CMake 3.21+, .NET 10 SDK
+$env:VCPKG_ROOT = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\vcpkg"
 
-$env:VCPKG_ROOT = "C:\vcpkg"
+# One-time clone; do not overwrite a user-owned checkout.
+git clone --depth 1 --branch v4.39.5 --recurse-submodules --shallow-submodules https://github.com/MinLL/CommonLibVR.git SkyrimMCPPlugin/extern/CommonLibVR
 
-# Clone CommonLibSSE-NG (one-time)
-git clone https://github.com/CharmedBaryon/CommonLibSSE-NG.git SkyrimMCPPlugin/extern/CommonLibSSE-NG --depth 1
+# Configure/build an isolated native candidate; no installed-game copy.
+Push-Location SkyrimMCPPlugin
+cmake --preset default -B build/minll-candidate
+cmake --build build/minll-candidate --config Release --parallel 2
+Pop-Location
 
-# Build SKSE plugin
-cd SkyrimMCPPlugin
-cmake --preset default
-cmake --build build --config Release
+# Companion server requires an owner-local SkyrimMCP/SkyrimMCP.snk (ignored).
+dotnet build .\SkyrimMCP -c Release
 
-# Build MCP server
-dotnet build ..\SkyrimMCP
-
-# Or build release package
-cd ..
-.\build_release.ps1 -Version "1.0.0"
+# Full package requires that signing key and a fresh output directory.
+# Configures/builds the default build tree, checks DLL hashes, bundles notices.
+.\build_release.ps1 -Version "1.0.0" -OutputDir "release-minll-candidate"
 ```
+
+Use a local fork signing identity, not an invented copy of the upstream private key. In a VS Developer command prompt, `sn -k 2048 SkyrimMCP/SkyrimMCP.snk` provisions a key for a fresh checkout; never overwrite an existing owner key or commit `.snk` files. This changes the fork's strong-name identity, not the stdio/MCP or named-pipe contracts.
+
+Configuration requires clean MinLL revision `550cc4fb9114649dcf526d1f3d73d710c5d7003b` and vcpkg baseline `ee12231b20c95013c6638d845d04c91559a1d1ff`. It generates a SHA-256-guarded non-VR `TESObjectREFR` header overlay for the SDK, SDK PCH, plugin and plugin PCH; dependency sources remain unchanged. Preserve any old `extern/CommonLibSSE-NG` checkout, but do not use it for this branch. Do not manually patch the pinned SDK or reuse a prebuilt library.
+
+The release script never deletes an existing output directory, rejects package/native version mismatch, stops on native-command failure, and refuses stale or hash-mismatched DLL fallback. Its outputs are local candidates, not automatic deployment or runtime certification.
+
+## Migration evidence — 2026-10-12
+
+**State:** offline source/build/package gates and the required runtime scenarios passed for the owner-approved **1.7.104.0-only** scope on STD/iSTD_SkyrimMCM-skylink with the installed candidate hashes below. Coverage includes startup/pipe, unchanged player/inventory/cell/NPC/quest/menu/combat queries, console/Papyrus, owner-observed HUD, independent God Mode restoration, equipment/death events, known-dead/combat/group state and bounded asynchronous save/exact reload. Positive group and quest-state checks have independent native/engine corroboration. Exact checkpoint restored the tested baseline and God Mode OFF; saves intact, Skyrim open. This is scoped acceptance, not every tool/event or version; damage immunity and controlled single-attack timing/stance are unverified. Prior-installed-DLL backup provenance remains unverified (OpenSpec5.2); no archive/publication performed. Release-license notices remain a publication concern. Earlier1.7.99.0/1.6.x remain deferred. OpenSpec stays intentionally ignored.
+
+The dated notes below preserve historical milestones and failures. Older pending/unknown statements are superseded by this current state and the later completed scenarios; they are not current operating blockers.
+
+The paired Claude final read-only audit independently confirmed the package hashes, loader metadata, system-only imports and unchanged C# surface; no source/ABI/package blockers were found. Its remaining release observations are the documented machine-specific VS2022 Community preset and pre-existing missing notices for packaged .NET dependencies. Neither is runtime evidence; license-notice completion remains a publication concern.
+
+### Built and packaged artifacts
+
+Local package: `SkyrimMCPPlugin/build/minll-candidate-20261012/package/`. Native targets were source-built with MSVC 19.44.35229.0 / VS2022 Community and the pinned vcpkg baseline. Actual SDK/plugin PCH and source command records showed `/Od /Ob0 /DNDEBUG /MT /std:c++23preview`, overlay-before-SDK include order and no Xbyak definition.
+
+| Artifact | SHA-256 |
+|---|---|
+| Fresh `SkyrimMCPPlugin/build/Release/SkyrimMCPPlugin.dll`, canonical `output/SkyrimMCPPlugin.dll`, and packaged native DLL (equal) | `f37cafa7790b964b9f64359b1babf8525ad5f668952b1e579897f64f8c7573b3` |
+| Published `SkyLinkAI_Server/SkyrimMCP.dll` and Release server output (equal) | `22eb89b404057be10fe396c3c706793e1bbdfc04e7e3ca48b485107f34f5a8b3` |
+
+The fresh and packaged PE records export `SKSEPlugin_Load`, `SKSEPlugin_Query` and `SKSEPlugin_Version`: plugin name `SkyrimMCPPlugin`, version 1.0.0, classic compatibility `0x1`, extended compatibility `0x3`, minimum SKSE 0. Offline import inspection found Windows system dependencies, not OpenVR or dynamic fmt/spdlog/VC-runtime DLLs. This is artifact evidence, not a successful SKSE load.
+
+The existing signing requirement was retained. An ignored owner-local 2048-bit fork key was generated; `sn -vf` verified the published server signature. The real packaged server answered stdio `initialize` as **SkyLink AI 1.0.0**, then returned **87** tool definitions from `tools/list`, including console, God Mode, notifications, equipment, Papyrus and save input schemas. No game tool was invoked. Historical headline tool counts are not the API oracle.
+
+### Source contracts and ABI smoke
+
+The source oracle is `Protocol.cpp`, `GameInterface.h`, manager response/error construction, and unchanged `SkyrimMCP/Tools/*.cs` signatures/defaults. Request `{id,action,params}` and response `{id,success,data}` or `{id,success,error}` remain newline-framed over `\\.\pipe\SkyrimMCP`; log identity remains `SkyrimMCPPlugin.log`. `kDataLoaded` startup, TaskQueue game-thread routing, pipe-thread Papyrus calls/catalog work, event polling and fire-and-forget save acknowledgment remain unchanged.
+
+Console success retains `executed`, `command` and optional `output`; caught-failure manager data retains `error`, `command`, `partialOutput` (the existing protocol promotes the error string). God Mode retains `godMode`. Native notifications retain `shown`/`message`, and equipped items retain `equipped` with unsigned armor `slotMask`. Papyrus unavailable-VM/error, arguments, callbacks and timeouts are preserved. These source contracts and the stdio metadata smoke are not an installed-game response baseline.
+
+The five permanent console-selector assertions compile, including the rollover where the old patch-only predicate selected 21890 for 1.7.99/104 instead of 441582. A disposable MSVC `/Od /Ob0` fixture exercised the actual pinned `Actor` methods with false/true death and combat states and a known group pointer: uncorrected header exited 71 at the wrong-slot guard; corrected header passed. Linked fixture instructions confirmed:
+
+| Consumer | Uncorrected slot | Corrected slot |
+|---|---|---|
+| `IsDead` | `0x9A` | `0x99` |
+| `GetCombatGroup` | `0xD5` | `0xD4` |
+| `IsInCombat` | `0xE4` | `0xE3` |
+
+The fingerprint guard accepted the pinned header/transformation and rejected a changed-header fixture. A real configure rejected an untracked dirty-SDK probe, which was removed immediately. Package version mismatch and existing-output refusal were exercised; a real CMake failure with a canonical DLL present emitted no package and did not fall back to that DLL. Positive packaging verified fresh/canonical/package equality and included the SDK, historical console, OpenVR and compiled dependency notices. Disposable fixtures are removed; selector assertions remain.
+
+`GetImpl()` replaces the removed direct Papyrus member; compiler-demonstrated API adjustments are `GetSlotMask().underlying()` and `SendHUDMessage::ShowHUDMessage()`. God Mode ID `404238` and music conversion remain unchanged; the pinned `BGSMusicType` header still places the `BSIMusicType` base at `0x20`. Runtime notification and music behavior have not been exercised.
+
+### Offline mappings and remaining runtime gates
+
+Decoded libraries: `D:/Modlists/STD/mods/Address Library for SKSE Plugins/SKSE/Plugins/versionlib-<version>.bin`. ID 21890 is absent in all four; compiler ID 441582 and God Mode ID 404238 are present:
+
+| Runtime | Library format | Compiler RVA (441582) | God Mode RVA (404238) | Executable semantic inspection |
+|---|---|---|---|---|
+| 1.6.1130.0 | 2 | `0x33D5B0` | `0x3182666` | Missing executable evidence |
+| 1.6.1170.0 | 2 | `0x33D6A0` | `0x319B9D6` | Console register/entry-point checks and `tgm` getter/setter linkage inspected |
+| 1.7.99.0 | 5 | `0x343D00` | `0x3244C86` | Missing executable evidence; equal RVAs are not semantic proof |
+| 1.7.104.0 | 5 | `0x343D00` | `0x3244C86` | Console register/entry-point checks and `tgm` getter/setter linkage inspected |
+
+Library SHA-256 fingerprints:
+
+- 1.6.1130.0: `5314ef0ece3b9300e811030329628f3917c04faa7dd600300540d74ff71a527a`
+- 1.6.1170.0: `c4093c569a3c83b26587f4b9ea4c55de9ae6e73b84a2af9fb3fbd30e2fe0d452`
+- 1.7.99.0: `184fca0c834e0d2523b450d18ea32c9fbf9f6295e88e936712b7360f1fccc4ec`
+- 1.7.104.0: `8aab3dd251d135b849bd983f86a4a205c920fa3e81f8e30c0e63ccfef9423842`
+
+Inspected executable identities:
+
+- `D:/Modlists/ADT/Game Root/SkyrimSE.exe`, 1.6.1170.0: `8f2116b073d5d74713b39a2b11cd35e6b745a760e690e1f46fc7ae76a9c0f48a`
+- `D:/SteamLibrary/steamapps/common/Skyrim Special Edition/SkyrimSE.exe`, 1.7.104.0: `846efccf0c1374d71f892907f46549560f2fcb0a75cb87a3eed438baa0f1402f`
+
+No exact 1.6.1130.0 or 1.7.99.0 executable was located in completed scoped checks; machine-wide absence is not asserted. The owner subsequently approved 1.7.104.0-only initial acceptance, so these missing checkpoints are deferred rather than blocking the current candidate. Obtain exact executables before expanding acceptance; do not infer semantics solely from IDs or equal RVAs.
+
+Follow-up offline verification on 2026-10-12 inspected actual PE file/product versions and SHA-256 values for five executable candidates, without running them. STD `GameRoot` and the Steam install are both 1.7.104.0 with the recorded `846efc…` hash; ASSOS `StockGame` and ADT `Game Root` are both 1.6.1170.0 with the recorded `8f2116…` hash. The existing Steam content depot (`C:/Program Files (x86)/Steam/steamapps/content/app_489830/depot_489833/SkyrimSE.exe`) is also 1.6.1170.0, SHA-256 `c434208894f07f604b852f29b8edc3a58c4de63de783373733e72b2b73f33be9`. None supplies the missing exact checkpoints. Version-labelled backup searches produced mod packages, not a positively identified target executable; archive contents and the whole machine were not exhaustively searched.
+
+The pinned SDK independently corroborates the implementation in source: `src/RE/S/Script.cpp:57–61` selects AE ID 441582 at/after 1.6.1130 using full-version `AE_CHECK` and the same compiler/name/target argument order; `src/RE/P/PlayerCharacter.cpp:27–30` reads God Mode ID 404238 as `bool*`. That confirms agreement with the supported SDK, not executable-backed semantics for the missing versions. Scoped SDK/iVault/IntelEngine research found no additional original binary-backed proof closing those two gates.
+
+The current 1.7.104.0 profile/save and prerequisites are identified, and startup/basic reads passed below. Remaining mandatory scenarios require their own bounded authorization: additional query schemas, console output, HUD notification, Papyrus callbacks, events, reversible God Mode and independently known death/combat/group states; asynchronous save/reload only when authorized. No full runtime-verified compatibility or archive until these scenarios pass. Deferred 1.7.99.0/1.6.x checks remain unverified.
+
+### Installed background smoke — 2026-10-13
+
+Owner-installed mod: `D:/Modlists/STD/mods/SkyLinkAI - 1.7.104 candidate`, enabled in the selected `iSTD_SkyrimMCM-skylink` MO2 profile. Process 24612 ran `D:/Modlists/STD/GameRoot/SkyrimSE.exe` and loaded that mod's native DLL plus `skse64_1_7_104.dll`; installed native/server hashes matched the candidate hashes above. .NET 10.0.3 was available. Startup log recorded successful plugin load, data-loaded initialization, 17 event sinks and the named pipe.
+
+The exact `Skylink-test-01.ess`/`.skse` family was copied into `SkyrimMCPPlugin/build/runtime-smoke-20261013T190120Z/save-backup/` with equal source/backup hashes; originals were unchanged at handback. ESS header decoding established player `Skylink-A`, level 1, location `The Drunken Huntsman` (header metadata, not a complete save-state decoder).
+
+The installed server initialized as SkyLink AI 1.0.0 and listed 87 tools. Actual responses: `check_connection.connected=true`; no open menus and no pause/loading/save/combat/dialogue/kill-move state; `get_player_info` matched checkpoint name/level/location; paged `get_inventory` returned item records; `get_cell_info` reported interior `000165B7`, The Drunken Huntsman, with positions equal to the player query. Inventory counts were observed, not independently verified against save contents or UI.
+
+Raw request IDs, timestamps, schemas, responses, process identity and backup fingerprints are in `SkyrimMCPPlugin/build/runtime-smoke-20261013T190120Z/mcp-readonly-smoke.json` (local ignored evidence). The foreground HWND was the same non-game window before and after the block; no activation or input was sent, so this is a bounded background-read pass, not qualification for mutations or every UI operation. No console, Papyrus, notification, event-poll, God Mode, combat setup or save/load operation was invoked. Only the owned MCP server was disconnected (exit 0); Skyrim remained open with the same PID.
+
+### Console and Papyrus smoke — 2026-10-13
+
+On the same ready, connected 1.7.104 process/profile/player, the existing MCP console route executed `player.getav health` and returned `GetActorValue: Health >> 500.00`, matching the fresh player query's health 500. The live Math catalog reported a global `abs(float)` function returning float; `call_papyrus_function` with `Math.abs` and `args="[-12.5]"` returned callback result `12.5`. Both checks passed without repeating earlier assertions or changing game state.
+
+Raw schemas/requests/responses and times are in `SkyrimMCPPlugin/build/runtime-smoke-20261013T190120Z/mcp-console-papyrus.json`. No focus/input operation was issued; foreground handles differed between baseline and handback, so continuous focus isolation is not claimed. Original save/co-save hashes remained unchanged; the owned server exited 0 and Skyrim remained open as PID 24612. The first notification at 19:20:54 UTC returned MCP success but was unobserved because the owner was not watching. The owner explicitly requested another after the expected top-left presentation was explained; following a five-second delay, `SkyLink HUD test 2` was sent once at 19:23:30 UTC. MCP returned success, the owned server exited 0, and the owner confirmed “Saw it!”: **HUD presentation PASS (owner-observed)**, not inferred from the wrapper receipt. Raw dispatch evidence: `mcp-hud-once.json` and `mcp-hud-owner-repeat.json` in the same evidence directory. Later events/God Mode/actor-state/save-reload checks remain pending.
+
+God Mode state-test preflight at 19:27 UTC was **BLOCKED**, before any toggle: the live game reported `isPaused=true` despite `safe=true`. Read-only `ReadProcessMemory` at verified 1.7.104 image RVA `0x3244C86` (AE ID 404238) established the initial boolean byte as 0/off, but no transition/restoration is claimed. Zero toggle requests, input/focus commands, damage/combat operations or saves were sent. The blocking-step Pushover notification was delivered; the owned server exited 0, read-only process handle closed, original ESS/SKSE hashes unchanged and game PID 24612 left open. Raw evidence: `mcp-godmode-preflight-blocked.json` in the same evidence directory. Pause cause was not established; resume only after a fresh agreed readiness checkpoint.
+
+After the owner explicitly requested a five-second delay followed by on/off and in-game notifications, fresh 19:31 UTC preflight reported unpaused/ready. Two `toggle_god_mode` requests returned On/true then Off/false, and independent read-only engine observations at RVA `0x3244C86` confirmed byte sequence `0 → 1 → 0`; initial off state was restored. The tool automatically issued its On/Off notifications; this block's visible presentation awaits owner observation. State-transition/restoration **PASS**, not damage-immunity proof. The game HWND was foreground at both endpoints (owner-controlled); no activation or keyboard input was issued, and this is not an unfocused-mutation qualification. ESS/SKSE hashes unchanged, server exit 0, read handle closed and game left open. Raw evidence: `mcp-godmode-on-off.json` in the same evidence directory. The earlier paused preflight remains historical, not a current blocker.
+
+At the owner's explicit staged-test request, a fresh 19:36 UTC check found the game unpaused and non-foreground; one God Mode toggle changed the independently read engine byte `0 → 1`. All nine foreground samples across the bounded preflight/on/observation window were non-game HWNDs; no activation/input commands were issued. **Background-on state change PASS for this operation/build/profile only**, not qualification for all mutations or HUD visibility. After owner `ready for off`, the 19:37 UTC foreground/readiness check passed, one toggle returned `God Mode Off`/false, and independent engine observations confirmed `1 → 0`, restoring the original off state. The owner confirmed “Saw it”: **Off notification presentation PASS (owner-observed)**. Save hashes unchanged; owned servers exited 0 and read handles closed. Raw evidence: `mcp-godmode-background-on.json` and `mcp-godmode-foreground-off.json`. No damage, save/load, activation or keyboard operations were sent.
+
+### Actor/equipment baseline and event preparation — 2026-10-13
+
+The first harness attempt stopped before any game calls because its local tool-name lookup used `get_nearby_npcs`; the live server advertises `get_nearby_np_cs`. The local harness lookup was corrected from the existing discovered schema, with no public tool rename or native change; the stop alert was delivered. Historical raw evidence: `mcp-actor-event-baseline.json`.
+
+The corrected read-only block passed connection/readiness and actor/equipment response paths. Player actor `00000014` matched Skylink-A/The Drunken Huntsman and returned `isDead=false`/`isInCombat=false`; combat response was `inCombat=false`. Nearby NPC detail for Anoriath `0001A680` agreed with list identity/death state. Equipment returned Roughspun Tunic body mask4, Footwraps feet mask128 and the right-hand sword. This is query execution/cross-query consistency and an idle/living baseline, not independent positive dead/active-combat/non-empty-group acceptance. Raw evidence: `mcp-actor-event-baseline-corrected.json`. Original save hashes unchanged; owned server exited0. No mutation, focus or input operation was sent.
+
+Source inspection established that Inventory menu open/close is not a registered event; `open_close` is not a menu-event contract. At baseline handback, the reversible Footwraps trigger was proposed but not yet authorized; it was subsequently authorized and passed as recorded below. Independently known positive actor-state fixtures remain pending.
+
+
+### Reversible equipment event smoke — 2026-10-13
+
+Owner selected agent-run Footwraps unequip/re-equip. The first event-baseline poll exceeded the throwaway Python client's default64KiB newline limit; it stopped before either console command, delivered the authorized failure alert and disconnected. Footwraps were still equipped. Historical evidence: `mcp-equipment-events.json`. This is a client-harness failure, not a demonstrated plugin failure; that initial consumed baseline was not captured completely.
+
+With only the local client response limit increased to4MiB, a fresh 19:56 UTC block verified the same instance/character/readiness and captured a complete113-event baseline. Exactly `player.unequipitem 0003CA00` then `player.equipitem 0003CA00` were sent, each once. Fresh equipment queries independently observed removal then exact original equipment restoration; Footwraps inventory count stayed1→1. The after-poll contained exactly two events, both `equip` for `0003CA00`/Footwraps, with ordered `equipped=false` then `true`: **equipment event delivery/restoration PASS**. This does not exercise all17 event types.
+
+Original save pair hashes unchanged, owned server exit0, same Skyrim PID still running. No saving, window activation or keyboard input. Foreground HWND was non-game at both endpoints; no continuous focus qualification is claimed. Raw evidence: `mcp-equipment-events-corrected.json`.
+
+### Protected actor fixture and checkpoint recovery — 2026-10-13
+
+The owner authorized a protected disposable actor/combat/death test and exact checkpoint rollback. An initial paused flag stopped preparation with no mutations; after the owner's background/unpaused observation, a distinct read-only observation found no menus, `gameIsPaused=false`, and native console GameHour5.97→5.99. No foreground activation/input was used. `search_forms` did not find QASmoke by its editor ID; a format-aware read of installed `Skyrim.esm` decoded CELL00032AE7/EDIDQASmoke. A loaded ordinary Mudcrab base00021875 was discovered. This establishes identities, not cell isolation; actual isolation was checked after entry.
+
+SkyrimNet.dll is loaded and overwrite Harness.yaml has `enabled:true`. Eight external SQLite databases were preserved by online backup from read-only sources, with quick_checkok and hashes; snapshots are per-database, not atomic across the collection. They were refreshed immediately before the authorized reload. This is preservation, not a claim that Harness external records remained unchanged through timeline rewind. Evidence: `external-precombat-backup.json`, `external-prereload-backup.json`.
+
+**Save creation/preservation PASS:** explicit fresh checkpoint `Skylink-migration-precombat-20261013T202221Z` produced nonempty stable ESS/SKSE files and hash-equal backup copies. God Mode original engine byte was0. No source checkpoint was overwritten. Evidence: `mcp-precombat-checkpoint.json`.
+
+**Combat-group fixture BLOCKED:** God guard independently changed0→1; QASmoke's actual cell00032AE7 and empty nearby-actor list were verified. Exactly one Mudcrab was spawned, base00021875/refFF000E86, alive/nonessential/nonprotected; independent engine GetDead returned0.00. One targeted StartCombat produced repeated `inCombat=true` responses, but no `targets`/`targetCount`/`allies` fields appeared within12seconds. The test stopped and alerted; no kill/death test or combat-state save was performed. This does not by itself distinguish nullable fixture behavior, wrong player accessor or a migration ABI issue. Evidence: `mcp-protected-actor-fixture.json`.
+
+**Authorized exact reload and bounded persistence PASS:** owner selected Restore now. Exact named load returned the character to original cell000165B7/The Drunken Huntsman, with matching name/level/health/magicka/stamina, original equipment and queried inventory-page form/count pairs. An overly strict throwaway-harness position assertion stopped on Z delta-0.7353515625; X/Y matched within rounding. No second load or position correction was issued. The recorded discrepancy is not an exact-position persistence pass and its cause is unproven. From the independently established safe restored state, original God Mode OFF was explicitly completed and independently read1→0. Original Skylink-test-01 and new checkpoint family hashes unchanged, owned servers exit0, same Skyrim process left open. Evidence: `mcp-precombat-checkpoint-recovery.json`, `mcp-precombat-recovery-completed.json`. Dead-actor and nonempty-group acceptance remain unpassed.
+
+**Static group-access diagnosis:** exact installed1.7.104 executable SHA256846efccf0c1374d71f892907f46549560f2fcb0a75cb87a3eed438baa0f1402f and dense Address Library mapped player vtable ID208040 to RVA019296C0. SlotD4 is RVA0076ACD0 (`mov rax,[rcx+0x9E0]; ret`); D5 writes that same field. E3 reads the separate combat bit at `this+0xBEB`. Thus the selected getter is a real player-group getter, not an inherited constant-null/wrong-slot function. This is static executable evidence; it does not prove the runtime group value/lifecycle or exclude installed hooks. The SDK's packed info block/version-aware accessors are separate from VR layout comments; no direct-offset shortcut or speculative native patch was made. The fixture started combat on the enemy, not the player, so it did not establish a populated player group. Runtime group allocation/fixture engagement remains the leading area to discriminate, with navmesh/engagement and installed hooks still unproven alternatives. Evidence: `native-player-combat-group-static.json`.
+
+### Revised native actor fixtures — 2026-10-13
+
+Owner asked to try again after the background native-engagement proposal. Fresh checkpoint `Skylink-migration-retry-20261013T213036Z` was created, ESS/SKSE completeness observed and hash-equal backups preserved; eight SkyrimNet databases were consistently snapshotted before testing and refreshed before reload. No focus activation or keyboard input was sent. Across the four bounded blocks, all200 foreground samples were non-game; this is sampled qualification for the exercised operations/build/profile, not proof about all operations or uninterrupted focus ownership.
+
+**Known dead actor PASS:** empty QASmoke verified before spawning one ordinary Mudcrab base00021875/refFF000E07. API `isDead=false` and engine GetDead0.00 established alive. One dedicated kill of only that temporary, nonessential/nonprotected actor produced API `isDead=true`, engine GetDead1.00 and a `death` event with matching actorFormId and deadtrue. Actor health remained55 in the response; death was not inferred from health. Evidence: `mcp-revised-death-fixture.json`.
+
+**Combat-bit transition/agreement PASS; positive group UNKNOWN:** a distinct temporary Mudcrab FF000DD3 was identified. One `player.startcombat FF000DD3` dispatch left the observed player bit false and native group null; dispatch alone was not accepted as player engagement. One enemy `FF000DD3.startcombat 00000014` then produced repeated native player combat-bittrue/API inCombattrue observations, followed by both false. Live read-only observations confirmed the expected player vtable/getter address and native group pointer0 at every sample. The API omitted group fields consistently. No player combat-start event was captured, so event-corroborated natural player engagement is not claimed. This confirms a native-null fixture outcome, not a reporting mismatch; it does not exercise nonempty group arrays. Blocker alert delivered; no speculative code patch, repeated StartCombat or forced group pointer. After capture only the verified second temporary actor was killed for the agreed encounter cleanup. Evidence: `mcp-revised-player-combat-fixture.json`.
+
+**Recovery PASS:** the exact fresh checkpoint loaded original cell000165B7/The Drunken Huntsman, matching character/level/health/magicka/stamina, equipment and queried inventory form/count pairs. Position delta was0 in this run, without asserting general exact-position persistence. Original God Mode OFF independently restored1→0; native/API combat flags false. Original Skylink-test-01 and fresh checkpoint families unchanged, owned servers exit0 and same Skyrim PID left open. No additional game operations after handback. Evidence: `mcp-revised-actor-checkpoint.json`, `mcp-revised-actor-recovery.json`.
+
+**Normal-attack staging (historical, completed):** fresh checkpoint `Skylink-migration-attack-20261013T214120Z` ESS/SKSE and external DB snapshots preserved. One temporary Mudcrab FF000E54 in verified-empty QASmoke was identified nonessential/nonprotected, given current health1000 (reported base healthMax55), and moved near the player; measured distance17.57. God guard independently ON, native combat bitfalse/groupnull before handoff. No StartCombat or camera-setting change. Evidence: `mcp-normal-attack-checkpoint.json`, `mcp-normal-attack-fixture-setup.json`. This staging state is superseded by the completed recovery below.
+
+**Positive combat-group query PASS; controlled attack sequence NOT CAPTURED:** owner reported crouching after Alt-Tab and repeated accidental hits before capture/cue. No cue or further attack was requested. At21:50:15UTC the independently read native player group was non-null (`0x1f501781d80`) and combat bittrue; the unchanged MCP query returned inCombattrue, targetCount1 and target refFF000E54. The separate NPC query matched identity, living/combat state and health973.8699951171875/max55. This proves the positive target-array query path against the intended fixture, not a single standing attack's timing, stance, combat-start event or causal sequence. Only the verified temporary actor was killed; combat returned idle. Evidence: `mcp-normal-attack-aborted.json`.
+
+**Exact recovery PASS:** all eight external SkyrimNet databases were consistently snapshotted before rewind. Exact checkpoint load restored Skylink-A/The Drunken Huntsman000165B7, queried values/equipment/counts and weapon charge100; position delta0 in this observation. Original God Mode independently restored1→0, combat false, source Skylink-test-01 and fresh ESS/SKSE hashes unchanged, owned server exit0, same game left open. A restarted-client launch first failed locally on a wrong server path, before any game command; alert delivered, failure preserved in `mcp-normal-attack-recovery.json`. The discovered installed path was hash-verified before completing recovery in `mcp-normal-attack-recovery-completed.json`. No focus activation/raw input or further gameplay after handback; vanity settings unchanged.
+
+### Read-only quest acceptance — 2026-10-13
+
+**Quest consumer scenario PASS:** the unchanged installed C# `get_quest_info` returned Before the Storm0004E50D, currentStage23, completedfalse and objective records. On the same fresh-ready process, read-only engine console `getstage 0004E50D` returned23.00 and `GetQuestCompleted 0004E50D` returned0.00, independently matching the selected quest's stage/completion. Same original cell retained, God Mode byte0 before/after, owned server exit0 and game left open; no quest mutations, save/load, activation or input. Sequential reads are not an atomic snapshot; objective contents and other quests were not independently certified. This closes the last required runtime query scenario, not the historical prior-DLL-backup gap or publication concerns. Evidence: `SkyrimMCPPlugin/build/runtime-smoke-20261013T190120Z/mcp-quest-query-acceptance.json`.
 
 ## Project Structure
 
@@ -165,8 +318,8 @@ cd ..
 
 ## Credits
 
-- Console command execution approach adapted from [ConsoleUtilSSE](https://github.com/VersuchDrei/ConsoleUtilSSE) by VersuchDrei (MIT License)
-- [CommonLibSSE-NG](https://github.com/CharmedBaryon/CommonLibSSE-NG) by CharmedBaryon
+- Console execution adapted from the [historical MIT ConsoleUtilSSE source](https://github.com/VersuchDrei/ConsoleUtilSSE/tree/0eb69c6c0d7366065f2408180216ec6cd8a40d5e) by VersuchDrei; see `licenses/LICENSE-ConsoleUtilSSE.txt`. No newer GPL source is imported.
+- [MinLL/CommonLibVR](https://github.com/MinLL/CommonLibVR/tree/550cc4fb9114649dcf526d1f3d73d710c5d7003b), derived from Ryan-rsm-McKenzie's CommonLib; see `licenses/LICENSE-CommonLibVR.txt`.
 - SKSE by Ian Patterson, Stephen Abel, and Paul Shortman
 
 ## License

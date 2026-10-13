@@ -5,7 +5,7 @@
 #include <cstdint>
 
 // Forward declare HANDLE as void* to avoid including windows.h in header
-// (CommonLibSSE-NG requires its headers before any Windows API includes)
+// (CommonLib requires its headers before any Windows API includes)
 using PipeHandle = void*;
 
 namespace SkyrimMCP {

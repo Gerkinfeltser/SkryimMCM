@@ -48,16 +48,11 @@ namespace {
     }
 }
 
-SKSEPluginInfo(
-    .Version = { 1, 0, 0, 0 },
-    .Name = "SkyrimMCPPlugin",
-    .Author = "SkyrimMCP",
-    .RuntimeCompatibility = SKSE::VersionIndependence::AddressLibrary
-)
-
 SKSEPluginLoad(const SKSE::LoadInterface* a_skse) {
     InitializeLogging();
-    SKSE::log::info("SkyrimMCPPlugin v1.0.0 loading...");
+    const auto version = SKSE::PluginDeclaration::GetSingleton()->GetVersion();
+    SKSE::log::info("SkyrimMCPPlugin v{}.{}.{} loading...",
+        version.major(), version.minor(), version.patch());
 
     SKSE::Init(a_skse);
 

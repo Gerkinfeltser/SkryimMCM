@@ -223,7 +223,7 @@ namespace SkyrimMCP::QuestManager {
         }
     }
 
-    // No native SetStage API in CommonLibSSE-NG — console command is the only option
+    // No native SetStage API in the pinned CommonLib — use the console command
     json SetQuestStage(const std::string& formIdHex, int stage) {
         return Helpers::ExecuteConsoleCommand(std::format("setstage {} {}", formIdHex, stage));
     }

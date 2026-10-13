@@ -3,11 +3,12 @@
   "configurePresets": [
     {
       "name": "default",
-      "displayName": "Default (vcpkg + VS2022)",
+      "displayName": "MinLL source build (vcpkg + VS2022)",
       "generator": "Visual Studio 17 2022",
       "architecture": "x64",
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
+        "CMAKE_GENERATOR_INSTANCE": "C:/Program Files/Microsoft Visual Studio/2022/Community",
         "CMAKE_TOOLCHAIN_FILE": {
           "type": "FILEPATH",
           "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
