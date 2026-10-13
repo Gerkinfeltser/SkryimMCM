@@ -44,7 +44,7 @@ Claude Desktop <--stdio/MCP--> C# MCP Server <--named pipe--> SKSE Plugin (insid
 ## Requirements
 
 - **Windows 10 or 11**
-- **Skyrim SE/AE 1.7.104.0** — owner-approved initial acceptance/testing target; in-game verification pending
+- **Skyrim SE/AE 1.7.104.0** — required runtime acceptance passed for the recorded installed candidate; supplemental 1.6.1170.0 basic smoke is not full-version certification
 - **SKSE64** ([skse.silverlock.org](https://skse.silverlock.org/))
 - **Address Library for SKSE** ([Nexus](https://www.nexusmods.com/skyrimspecialedition/mods/32444))
 - **.NET 10 Runtime** ([download](https://dotnet.microsoft.com/download/dotnet/10.0))
@@ -130,24 +130,30 @@ The release script never deletes an existing output directory, rejects package/n
 
 ## Migration evidence — 2026-10-12
 
-**State:** offline source/build/package gates and the required runtime scenarios passed for the owner-approved **1.7.104.0-only** scope on STD/iSTD_SkyrimMCM-skylink with the installed candidate hashes below. Coverage includes startup/pipe, unchanged player/inventory/cell/NPC/quest/menu/combat queries, console/Papyrus, owner-observed HUD, independent God Mode restoration, equipment/death events, known-dead/combat/group state and bounded asynchronous save/exact reload. Positive group and quest-state checks have independent native/engine corroboration. Exact checkpoint restored the tested baseline and God Mode OFF; saves intact, Skyrim open. This is scoped acceptance, not every tool/event or version; damage immunity and controlled single-attack timing/stance are unverified. Prior-installed-DLL backup provenance remains unverified (OpenSpec5.2); no archive/publication performed. Release-license notices remain a publication concern. Earlier1.7.99.0/1.6.x remain deferred. OpenSpec stays intentionally ignored.
+**State:** offline source/build/package gates and the required runtime scenarios passed for the owner-approved **1.7.104.0-only** scope on STD/iSTD_SkyrimMCM-skylink with the installed candidate hashes below. Coverage includes startup/pipe, unchanged player/inventory/cell/NPC/quest/menu/combat queries, console/Papyrus, owner-observed HUD, independent God Mode restoration, equipment/death events, known-dead/combat/group state and bounded asynchronous save/exact reload. Positive group and quest-state checks have independent native/engine corroboration. Exact checkpoint restored the tested baseline and God Mode OFF; saves intact. This is scoped acceptance, not every tool/event or version; damage immunity and controlled single-attack timing/stance are unverified. The owner accepted the historical missing prior-installed-DLL backup as a closeout exception, not a performed backup or old-binary rollback. Future installations still require preservation before mutation. Full earlier-version acceptance remains deferred. OpenSpec stays intentionally ignored; package closeout evidence follows.
 
 **Supplemental 1.6.1170.0 basic smoke PASS:** ADT/iADT_harness-smoke startup/basic queries/player-console reads, resumed Math.abs callback, owner-observed HUD and corrected quoted NPC GetDead passed using the same candidate. `"0001A681".getdead` returned0.00 on both ADT1.6.1170 and STD1.7.104, matching the identified living actor. The original unquoted test command was the syntax error, not an observed version-only incompatibility; no native patch needed. Basic exercised-path compatibility, not full1.6.1170 certification; no God/combat/event/save-load fixtures. Windows beep was a viewing cue, not Skyrim audio coverage.
 
 The dated notes below preserve historical milestones and failures. Older pending/unknown statements are superseded by this current state and the later completed scenarios; they are not current operating blockers.
 
-The paired Claude final read-only audit independently confirmed the package hashes, loader metadata, system-only imports and unchanged C# surface; no source/ABI/package blockers were found. Its remaining release observations are the documented machine-specific VS2022 Community preset and pre-existing missing notices for packaged .NET dependencies. Neither is runtime evidence; license-notice completion remains a publication concern.
+The paired Claude final read-only audit independently confirmed the original package hashes, loader metadata, system-only imports and unchanged C# surface; no source/ABI/package blockers were found. Its machine-specific VS2022 Community preset observation remains documented. The then-missing packaged .NET notices were completed and verified during local closeout below; that audit itself is not runtime evidence.
 
 ### Built and packaged artifacts
 
-Local package: `SkyrimMCPPlugin/build/minll-candidate-20261012/package/`. Native targets were source-built with MSVC 19.44.35229.0 / VS2022 Community and the pinned vcpkg baseline. Actual SDK/plugin PCH and source command records showed `/Od /Ob0 /DNDEBUG /MT /std:c++23preview`, overlay-before-SDK include order and no Xbyak definition.
+Runtime-tested package preserved at `SkyrimMCPPlugin/build/minll-candidate-20261012/package/`. Original native targets were source-built with MSVC 19.44.35229.0 / VS2022 Community and the pinned vcpkg baseline. Actual SDK/plugin PCH and source command records showed `/Od /Ob0 /DNDEBUG /MT /std:c++23preview`, overlay-before-SDK include order and no Xbyak definition.
 
 | Artifact | SHA-256 |
 |---|---|
-| Fresh `SkyrimMCPPlugin/build/Release/SkyrimMCPPlugin.dll`, canonical `output/SkyrimMCPPlugin.dll`, and packaged native DLL (equal) | `f37cafa7790b964b9f64359b1babf8525ad5f668952b1e579897f64f8c7573b3` |
-| Published `SkyLinkAI_Server/SkyrimMCP.dll` and Release server output (equal) | `22eb89b404057be10fe396c3c706793e1bbdfc04e7e3ca48b485107f34f5a8b3` |
+| Runtime-tested package native DLL (original fresh/canonical/package equality) | `f37cafa7790b964b9f64359b1babf8525ad5f668952b1e579897f64f8c7573b3` |
+| Runtime-tested package `SkyLinkAI_Server/SkyrimMCP.dll` (original publish/Release equality) | `22eb89b404057be10fe396c3c706793e1bbdfc04e7e3ca48b485107f34f5a8b3` |
+| Closeout rebuild native DLL (current fresh/canonical/package equality; not installed/tested in game) | `612a090a01222fd2f9d39bebe87ccd013befd36f8b25b7641d4cb246c83aae7e` |
+| Closeout rebuild server (stdio/signature verified; not installed/tested in game) | `a11dff0048894345d981ec2fd679eeff25621b7af49b1371cc0ee86246631916` |
 
-The fresh and packaged PE records export `SKSEPlugin_Load`, `SKSEPlugin_Query` and `SKSEPlugin_Version`: plugin name `SkyrimMCPPlugin`, version 1.0.0, classic compatibility `0x1`, extended compatibility `0x3`, minimum SKSE 0. Offline import inspection found Windows system dependencies, not OpenVR or dynamic fmt/spdlog/VC-runtime DLLs. This is artifact evidence, not a successful SKSE load.
+The original runtime-tested fresh and packaged PE records export `SKSEPlugin_Load`, `SKSEPlugin_Query` and `SKSEPlugin_Version`: plugin name `SkyrimMCPPlugin`, version 1.0.0, classic compatibility `0x1`, extended compatibility `0x3`, minimum SKSE 0. Original offline import inspection found Windows system dependencies, not OpenVR or dynamic fmt/spdlog/VC-runtime DLLs. This artifact inspection alone is not a successful SKSE load.
+
+**Local release closeout — 2026-10-13:** `SkyrimMCPPlugin/build/closeout-20261013/package-final/` was built through the actual release script. All 31 published NuGet dependencies have exact-version MIT license text and cached upstream metadata/copyright; all 29 applicable third-party notice payloads were compared with restored packages or pinned upstream files. Native notices remain bundled. Real packaged stdio initialization and all 87 tool definitions matched the runtime-tested server exactly; both owned servers exited 0 without any game tool call. Packaged strong-name signature verified. Raw proof: `SkyrimMCPPlugin/build/closeout-20261013/package-verification.json`. The rebuild's native/server hashes differ from the installed runtime-tested candidate: this new package is offline-verified only and requires installation/runtime smoke before claiming its bytes were tested. No installation, game action or publication occurred during closeout.
+
+**OpenSpec closeout:** all 23 tasks closed, with the prior-DLL item closed solely by the accepted historical exception. Strict validation passed the change and both synced main capabilities (3 passed, 0 failed). Local archive: `openspec/changes/archive/2026-10-13-migrate-minll-commonlibvr-1-7/`, including `verification.md`; main capabilities live under `openspec/specs/`. The entire OpenSpec tree remains intentionally ignored. No publication, commit or push was performed during this closeout.
 
 The existing signing requirement was retained. An ignored owner-local 2048-bit fork key was generated; `sn -vf` verified the published server signature. The real packaged server answered stdio `initialize` as **SkyLink AI 1.0.0**, then returned **87** tool definitions from `tools/list`, including console, God Mode, notifications, equipment, Papyrus and save input schemas. No game tool was invoked. Historical headline tool counts are not the API oracle.
 
@@ -342,6 +348,7 @@ Owner selected ADT profile `iADT_harness-smoke` (verified filesystem/MO2 spellin
 
 - Console execution adapted from the [historical MIT ConsoleUtilSSE source](https://github.com/VersuchDrei/ConsoleUtilSSE/tree/0eb69c6c0d7366065f2408180216ec6cd8a40d5e) by VersuchDrei; see `licenses/LICENSE-ConsoleUtilSSE.txt`. No newer GPL source is imported.
 - [MinLL/CommonLibVR](https://github.com/MinLL/CommonLibVR/tree/550cc4fb9114649dcf526d1f3d73d710c5d7003b), derived from Ryan-rsm-McKenzie's CommonLib; see `licenses/LICENSE-CommonLibVR.txt`.
+- Packaged .NET dependencies follow the published `SkyrimMCP.deps.json` graph. `licenses/dotnet/` in release packages retains each exact package's MIT license, `.nuspec` copyright/repository metadata and available notices. Missing bundled license text uses the pinned upstream [MCP SDK license](https://github.com/modelcontextprotocol/csharp-sdk/blob/2da929914c2d7becbab0a51d1bda171aec4ce9e8/LICENSE), [dotnet license](https://github.com/dotnet/dotnet/blob/89c8f6a112d37d2ea8b77821e56d170a1bccdc5a/LICENSE.TXT), or [AI abstractions source license](https://github.com/dotnet/extensions/blob/f8f779a6ea004bb1f26649719ca77d63a9d9417c/LICENSE) and [notice](https://github.com/dotnet/extensions/blob/f8f779a6ea004bb1f26649719ca77d63a9d9417c/THIRD-PARTY-NOTICES.TXT), retained under root `licenses/`.
 - SKSE by Ian Patterson, Stephen Abel, and Paul Shortman
 
 ## License

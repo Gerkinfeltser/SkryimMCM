@@ -85,6 +85,48 @@ foreach ($Dependency in @("directxmath", "directxtk", "fmt", "nlohmann-json", "r
 }
 Copy-Item (Join-Path $PluginDir "extern\CommonLibVR\extern\openvr\LICENSE") (Join-Path $OutputDir "licenses\LICENSE-openvr.txt")
 
+# Follow the published dependency graph, not a hand-maintained package list.
+$Assets = Get-Content (Join-Path $PSScriptRoot "SkyrimMCP\obj\project.assets.json") -Raw | ConvertFrom-Json
+$PublishedDeps = Get-Content (Join-Path $ServerOutputDir "SkyrimMCP.deps.json") -Raw | ConvertFrom-Json
+$DotNetNotices = Join-Path $OutputDir "licenses\dotnet"
+New-Item -ItemType Directory -Path $DotNetNotices | Out-Null
+foreach ($Library in $PublishedDeps.libraries.PSObject.Properties | Where-Object { $_.Value.type -eq "package" }) {
+    $Package = $Assets.libraries.PSObject.Properties[$Library.Name].Value
+    if (-not $Package) { throw "Missing restored metadata for published dependency $($Library.Name)." }
+    $PackageDir = $Assets.packageFolders.PSObject.Properties.Name |
+        ForEach-Object { Join-Path $_ $Package.path } |
+        Where-Object { Test-Path $_ -PathType Container } |
+        Select-Object -First 1
+    if (-not $PackageDir) { throw "Missing restored package $($Library.Name)." }
+    $Nuspec = $Package.files | Where-Object { $_ -like "*.nuspec" } | Select-Object -First 1
+    if (-not $Nuspec) { throw "Missing license metadata for $($Library.Name)." }
+    $Metadata = ([xml](Get-Content (Join-Path $PackageDir $Nuspec) -Raw)).package.metadata
+    if ($Metadata.license.type -ne "expression" -or $Metadata.license.InnerText -ne "MIT") {
+        throw "Review the license for $($Library.Name) before packaging it."
+    }
+    $LicenseFile = $Package.files | Where-Object { $_ -match '(^|/)LICENSE(\.TXT)?$' } | Select-Object -First 1
+    if ($LicenseFile) {
+        $LicenseSource = Join-Path $PackageDir $LicenseFile
+    } elseif ($Metadata.repository.url -eq "https://github.com/modelcontextprotocol/csharp-sdk") {
+        $LicenseSource = Join-Path $PSScriptRoot "licenses\LICENSE-ModelContextProtocol.txt"
+    } elseif ($Metadata.repository.url -eq "https://github.com/dotnet/extensions") {
+        $LicenseSource = Join-Path $PSScriptRoot "licenses\LICENSE-dotnet-extensions.txt"
+    } elseif ($Metadata.repository.url -eq "https://github.com/dotnet/dotnet") {
+        $LicenseSource = Join-Path $PSScriptRoot "licenses\LICENSE-dotnet.txt"
+    } else {
+        throw "Missing upstream license text for $($Library.Name)."
+    }
+    $PackageName = $Library.Name.Replace("/", "-")
+    Copy-Item $LicenseSource (Join-Path $DotNetNotices "$PackageName-LICENSE.txt")
+    Copy-Item (Join-Path $PackageDir $Nuspec) (Join-Path $DotNetNotices "$PackageName.nuspec")
+    if ($Metadata.repository.url -eq "https://github.com/dotnet/extensions") {
+        Copy-Item (Join-Path $PSScriptRoot "licenses\THIRD-PARTY-NOTICES-dotnet-extensions.txt") (Join-Path $DotNetNotices "$PackageName-THIRD-PARTY-NOTICES.TXT")
+    }
+    foreach ($NoticeFile in $Package.files | Where-Object { $_ -match '(^|/)(THIRD[-_]PARTY[-_]NOTICES|NOTICE)(\..*)?$' }) {
+        Copy-Item (Join-Path $PackageDir $NoticeFile) (Join-Path $DotNetNotices "$PackageName-$(Split-Path $NoticeFile -Leaf)")
+    }
+}
+
 # Create example config
 $config = @{
     mcpServers = @{
@@ -110,10 +152,11 @@ with Skyrim SE/AE's runtime engine via an SKSE plugin.
 - .NET 10 Runtime (https://dotnet.microsoft.com/download/dotnet/10.0)
 - Claude Desktop (https://claude.ai/desktop)
 
-This source-built candidate's current acceptance/testing target is Skyrim
-SE/AE 1.7.104.0 only. Offline gates passed; in-game compatibility is not yet
-validated. Earlier versions are deferred/unverified; VR and future patches
-are not supported by this candidate's acceptance claim.
+Required runtime acceptance passed on Skyrim SE/AE 1.7.104.0.
+Supplemental basic smoke passed on 1.6.1170.0, not full-version certification.
+VR, other patches and unexercised tools remain outside that acceptance claim.
+These results apply to the tested candidate hashes recorded in the repository
+README; compare installed/package hashes before transferring runtime evidence.
 
 ## Installation
 1. Extract the Data folder into your Skyrim directory
@@ -155,10 +198,11 @@ Replace <SKYRIM_PATH> with your Skyrim installation path.
 
 - Console execution adapted from the historical MIT ConsoleUtilSSE source at 0eb69c6c0d7366065f2408180216ec6cd8a40d5e (see licenses/LICENSE-ConsoleUtilSSE.txt); no newer GPL source imported.
 - MinLL/CommonLibVR v4.39.5, pin 550cc4fb9114649dcf526d1f3d73d710c5d7003b (MIT; see licenses/LICENSE-CommonLibVR.txt).
+- Packaged .NET dependencies: exact published package versions, MIT license texts, upstream metadata/copyright and available third-party notices are included in licenses/dotnet/.
 "@ | Set-Content "$OutputDir\README.txt"
 
-Write-Host "`n=== Candidate Package Complete (in-game validation pending) ===" -ForegroundColor Green
+Write-Host "`n=== Local Candidate Package Complete ===" -ForegroundColor Green
 Write-Host "Release folder: $OutputDir\"
 Write-Host "  SKSE Plugin: $OutputDir\Data\SKSE\Plugins\SkyrimMCPPlugin.dll"
 Write-Host "  MCP Server:  $OutputDir\Data\SKSE\Plugins\SkyLinkAI_Server\"
-Write-Host "`nDo not publish runtime compatibility claims until the candidate passes authorized in-game testing."
+Write-Host "`nLocal package only; runtime acceptance applies to the tested hashes recorded in README.md."

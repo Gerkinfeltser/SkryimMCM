@@ -71,9 +71,11 @@ dotnet build .\SkyrimMCP -c Release
 
 **ABI/provenance:** require the exact clean MIT SDK checkout, no imported/prebuilt library, and the fingerprint-guarded non-VR `TESObjectREFR` overlay in SDK/PCH/plugin/PCH include views. `src/PCH.h` supplies the SDK context and string-view literal required by generated metadata. Do not edit the dependency header in place or disable optimization for only one native target.
 
-**Acceptance:** owner-approved initial candidate/runtime acceptance is 1.7.104.0 only. Offline gates passed; candidate ready for separately authorized installation/testing, not runtime-verified. Earlier 1.7.99.0/1.6.x checkpoints are deferred/unverified, not current blockers; preserve existing selector behavior without adding a whitelist. No VR/future-version claim. See README's evidence. Never install, launch the game or publish verified compatibility without corresponding authorization and acceptance.
+**Acceptance:** required 1.7.104.0 runtime scenarios passed for the exact installed candidate hashes recorded in README. Supplemental 1.6.1170.0 basic smoke passed only its exercised paths, not full-version certification. Fresh rebuilds with different hashes remain offline-only until separately installed and exercised. Full earlier-version acceptance, VR and future patches remain outside scope; preserve existing selectors without adding a whitelist. Never install, launch the game or publish compatibility without corresponding authorization and evidence.
 
 **Fork signing:** the upstream private key is not in source. A fresh fork can use an owner-local 2048-bit key from `sn -k 2048 SkyrimMCP/SkyrimMCP.snk`; check absence first and preserve an existing key. `.snk` files are already ignored. The resulting strong-name identity is fork-local; the stdio/MCP and pipe contracts are unchanged.
+
+**Package notices:** release packaging follows the published server dependency graph and restored NuGet metadata, retaining exact-version MIT texts/copyright and applicable third-party notices. Missing or unreviewed licensing stops completion. Pinned upstream fallback texts live under `licenses/`; packages retain these alongside native notices. Prior installed DLL and save/co-save preservation is required before future installations; the owner-accepted historical missing-DLL backup is not a reusable exemption.
 
 ## Protocol
 

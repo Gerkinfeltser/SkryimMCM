@@ -1516,9 +1516,9 @@
     {
       "id": "INFRA-015",
       "type": "infrastructure",
-      "status": "mostly-complete",
+      "status": "complete",
       "title": "Pinned MinLL/CommonLibVR migration — initial Skyrim 1.7.104 acceptance",
-      "description": "Pinned v4.39.5 migration/offline gates and required1.7.104-only runtime scenarios passed for installed STD/iSTD_SkyrimMCM-skylink candidate. Unchanged player/inventory/cell/NPC/quest/menu/combat routes, console/Papyrus/HUD/God/equipment/death and bounded asynchronous save/exact reload exercised. Positive native group/API exactFF000E54 target and independent quest engine stage/completion matched. Exact rollback restored tested baseline/counts/charge and original GodOFF; saves unchanged, game open. Scoped coverage, not every tool/event; damage immunity and controlled single-attack timing/stance unverified. Mostly-complete because historical prior-installed-DLL backup provenance remains unverified (OpenSpec5.2); no archive/publication, .NET license notices remain publication concern. Earlier1.7.99/1.6.x deferred.",
+      "description": "Pinned MinLL v4.39.5 migration and mandatory1.7.104 runtime acceptance completed for the recorded installed STD candidate; supplemental1.6.1170 basic smoke passed only its exercised paths. Positive native/API combat-group and independent quest state agreed; checkpoint recovery restored tested baseline and GodOFF. Local release closeout verified31 published NuGet license/copyright payloads,29 third-party notices,9 native notices, fresh/canonical/package equality, signed server and exact87-tool stdio contract match. Prior installed DLL backup closed only as an owner-accepted historical gap, not a performed backup or old-binary rollback. OpenSpec strictly verified and archived locally with synced main specs; remains intentionally ignored. Rebuilt native/server hashes differ from the tested installed candidate and remain offline-only pending separately authorized installed smoke. No installation, game actions, publication, commit or push during closeout. Full earlier-version/VR/future-patch acceptance remains outside scope.",
       "evidence": "README.md#Migration evidence — 2026-10-12",
       "history": [
         {
@@ -1608,6 +1608,10 @@
         },
         {
           "note": "Corrected ADT1.6.1170 GetDead PASS: fresh process61168/selected iADT_harness-smoke/current SKSE log skylink-161170-01/live Skylink-1.6/original cell/identical native-server hashes verified. Living Elrindir0001A681/base00013B9E queried, one \"0001A681\".getdead returned GetDead0.00 matching API alive. Quoted command accepted on both1.6.1170 and1.7.104; original extra smoke failure resolved as unquoted-reference test syntax, not observed version-only incompatibility; no native patch. Exact ADT ESS/SKSE unchanged, server exit0/game open/God untouched; no combat/quest/save-load/focus/input mutations or fallback retries. Supplemental basic1.6.1170 smoke passed its exercised paths, not full positive death/combat/group/events/persistence acceptance. Raw: SkyrimMCPPlugin/build/adt-quoted-npc-20261013T223743Z/mcp-quoted-getdead.json."
+        },
+        {
+          "datetime": "2026-10-13T22:57:41+00:00",
+          "note": "Authorized local release closeout complete. Actual build_release.ps1 produced SkyrimMCPPlugin/build/closeout-20261013/package-final;31 exact published NuGet MIT license/metadata matches,29 notice payloads and9 native notice payloads verified. Native fresh/canonical/package SHA equality passed; real rebuilt/tested stdio initialization and87-tool definitions matched exactly, both servers exit0 without game calls; sn -vf passed. Rebuild hashes612a090a01222fd2f9d39bebe87ccd013befd36f8b25b7641d4cb246c83aae7e/native and a11dff0048894345d981ec2fd679eeff25621b7af49b1371cc0ee86246631916/server differ from runtime-tested installed bytes: new package is offline-only, not deployed or game-certified. Missing prior-DLL backup explicitly accepted as historical gap, never claimed performed; future preservation rule retained. OpenSpec23/23 tasks closed; change and two synced main specs passed strict validation3/3. Archived locally at openspec/changes/archive/2026-10-13-migrate-minll-commonlibvr-1-7 with verification.md. OpenSpec/signing key remain ignored/private; no installation/game actions/publication/commit/push. Raw package proof: SkyrimMCPPlugin/build/closeout-20261013/package-verification.json."
         }
       ]
     }
