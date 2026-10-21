@@ -33,5 +33,6 @@ Thumbs.db
 *.snk
 papyrus_catalog.json
 
-# Openspec
+# Openspec & stuff
 openspec
+docs
