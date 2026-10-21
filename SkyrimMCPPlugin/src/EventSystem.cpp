@@ -35,9 +35,11 @@ namespace SkyrimMCP {
         holder->AddEventSink<RE::TESLockChangedEvent>(this);
         holder->AddEventSink<RE::TESTrackedStatsEvent>(this);
 
-        try { holder->AddEventSink<RE::TESFastTravelEndEvent>(this); } catch (...) {}
+        if (!REL::Module::IsVR()) {
+            holder->AddEventSink<RE::TESFastTravelEndEvent>(this);
+        }
 
-        SKSE::log::info("Event system registered for 17 event types");
+        SKSE::log::info("Event system registered for {} event types", REL::Module::IsVR() ? 16 : 17);
     }
 
     void EventSystem::Unregister() {
@@ -60,7 +62,9 @@ namespace SkyrimMCP {
         holder->RemoveEventSink<RE::TESWaitStopEvent>(this);
         holder->RemoveEventSink<RE::TESLockChangedEvent>(this);
         holder->RemoveEventSink<RE::TESTrackedStatsEvent>(this);
-        try { holder->RemoveEventSink<RE::TESFastTravelEndEvent>(this); } catch (...) {}
+        if (!REL::Module::IsVR()) {
+            holder->RemoveEventSink<RE::TESFastTravelEndEvent>(this);
+        }
     }
 
     // Known framework quests that fire events constantly
