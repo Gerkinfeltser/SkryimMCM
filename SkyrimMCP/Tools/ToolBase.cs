@@ -43,6 +43,7 @@ public abstract class ToolBase
     /// Apply paging to a response that contains an array field.
     /// Returns a paged envelope with items, page, pageSize, totalItems, totalPages, hasMore.
     /// If page=0 or pageSize=0, returns summary only (no items).
+    /// Other top-level fields from the plugin (complete, incompleteReason, refId, name, ...) are kept.
     /// </summary>
     protected static object PageResponse(JsonNode? data, string arrayField, int page = 1, int pageSize = 50)
     {
@@ -54,32 +55,32 @@ public abstract class ToolBase
         int totalItems = array.Count;
         int totalPages = pageSize > 0 ? (int)Math.Ceiling((double)totalItems / pageSize) : 1;
 
+        var result = new JsonObject();
+        foreach (var (key, value) in data.AsObject())
+        {
+            if (key != arrayField) result[key] = value?.DeepClone();
+        }
+
         // Summary only mode
         if (page == 0 || pageSize == 0)
         {
-            return new
-            {
-                totalItems,
-                totalPages = pageSize > 0 ? totalPages : 0,
-                summaryOnly = true
-            };
+            result["totalItems"] = totalItems;
+            result["totalPages"] = pageSize > 0 ? totalPages : 0;
+            result["summaryOnly"] = true;
+            return DeserializeResponse(result);
         }
 
         // Slice the array
-        var items = array
+        result["items"] = new JsonArray(array
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(i => JsonSerializer.Deserialize<JsonElement>(i?.ToJsonString() ?? "{}"))
-            .ToArray();
-
-        return new
-        {
-            items,
-            page,
-            pageSize,
-            totalItems,
-            totalPages,
-            hasMore = page < totalPages
-        };
+            .Select(i => i?.DeepClone())
+            .ToArray());
+        result["page"] = page;
+        result["pageSize"] = pageSize;
+        result["totalItems"] = totalItems;
+        result["totalPages"] = totalPages;
+        result["hasMore"] = page < totalPages;
+        return DeserializeResponse(result);
     }
 }

@@ -1,6 +1,7 @@
 using System.IO.Pipes;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using ModelContextProtocol;
 
 namespace SkyrimMCP;
 
@@ -9,14 +10,24 @@ namespace SkyrimMCP;
 /// </summary>
 public class PipeClient : IPipeClient
 {
-    private const string PipeName = "SkyrimMCP";
     private const int ConnectTimeoutMs = 3000;
     private const int ResponseTimeoutMs = 10000;
 
+    private readonly string _pipeName;
     private NamedPipeClientStream? _pipe;
     private StreamReader? _reader;
     private StreamWriter? _writer;
     private readonly SemaphoreSlim _sendLock = new(1, 1);
+
+    public PipeClient() : this("SkyrimMCP") { }
+
+    /// <summary>
+    /// Connect to a different pipe name (tests use a private name so they never reach a running game)
+    /// </summary>
+    public PipeClient(string pipeName)
+    {
+        _pipeName = pipeName;
+    }
 
     public bool IsConnected => _pipe?.IsConnected ?? false;
 
@@ -29,7 +40,7 @@ public class PipeClient : IPipeClient
         {
             Disconnect();
 
-            _pipe = new NamedPipeClientStream(".", PipeName, PipeDirection.InOut);
+            _pipe = new NamedPipeClientStream(".", _pipeName, PipeDirection.InOut);
             await _pipe.ConnectAsync(ConnectTimeoutMs);
 
             _reader = new StreamReader(_pipe);
@@ -98,7 +109,8 @@ public class PipeClient : IPipeClient
             if (!success)
             {
                 var error = response["error"]?.GetValue<string>() ?? "Unknown error from SKSE plugin";
-                throw new InvalidOperationException(error);
+                // McpException keeps the plugin's message in the tool result; other exceptions are sanitized by the SDK
+                throw new McpException(error);
             }
 
             return response["data"];
