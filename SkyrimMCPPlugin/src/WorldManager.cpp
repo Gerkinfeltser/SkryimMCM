@@ -334,7 +334,8 @@ namespace SkyrimMCP::WorldManager {
         // tmm 1 is kept as console command — native approach requires iterating all
         // TESObjectREFR in every worldspace to find ExtraMapMarker data, which is
         // significantly more expensive than the engine's built-in tmm command.
-        Helpers::ExecuteConsoleCommand("tmm 1");
+        auto result = Helpers::ExecuteConsoleCommand("tmm 1");
+        if (result.contains("error")) return result;
         return {{"discovered", true}, {"message", "All map markers discovered"}};
     }
 
@@ -404,7 +405,7 @@ namespace SkyrimMCP::WorldManager {
         auto playerPos = player->GetPosition();
         json merchants = json::array();
 
-        for (auto& actorHandle : processLists->highActorHandles) {
+        for (const auto& actorHandle : processLists->highActorHandles) {
             auto actorPtr = actorHandle.get();
             if (!actorPtr) continue;
 

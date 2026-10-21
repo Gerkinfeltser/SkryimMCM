@@ -202,6 +202,11 @@ namespace SkyrimMCP::Helpers {
     static_assert(ConsoleCompilerAEId({1, 7, 99, 0}) == 441582);
     static_assert(ConsoleCompilerAEId({1, 7, 104, 0}) == 441582);
 
+    // The VR CSV has these IDs, but compiler ABI and God Mode storage are unqualified.
+    inline bool IsVRBindingUnavailable() noexcept {
+        return REL::Module::IsVR();
+    }
+
     inline void CompileAndRunImpl(RE::Script* script, RE::ScriptCompiler* compiler,
         RE::COMPILER_NAME name, RE::TESObjectREFR* targetRef) {
         using func_t = decltype(CompileAndRunImpl);
@@ -228,6 +233,10 @@ namespace SkyrimMCP::Helpers {
     }
 
     inline json ExecuteConsoleCommand(const std::string& command) {
+        if (IsVRBindingUnavailable()) {
+            return {{"error", "Console commands are unavailable in VR: compiler binding is not validated"}};
+        }
+
         // Console command execution using the approach from ConsoleUtilSSE
         // by VersuchDrei (https://github.com/VersuchDrei/ConsoleUtilSSE, MIT License)
 

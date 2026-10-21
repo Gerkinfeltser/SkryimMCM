@@ -47,7 +47,7 @@ set(BUILD_TESTS OFF CACHE BOOL "CommonLib tests" FORCE)
 set(SKSE_SUPPORT_XBYAK OFF CACHE BOOL "No Xbyak" FORCE)
 set(ENABLE_SKYRIM_SE ON CACHE BOOL "SE support" FORCE)
 set(ENABLE_SKYRIM_AE ON CACHE BOOL "AE support" FORCE)
-set(ENABLE_SKYRIM_VR OFF CACHE BOOL "No VR support" FORCE)
+set(ENABLE_SKYRIM_VR ON CACHE BOOL "VR support" FORCE)
 set(COMMONLIB_PREBUILT OFF CACHE BOOL "Source-build the audited SDK" FORCE)
 set(COMMONLIB_PREBUILT_DIR "" CACHE PATH "No prebuilt override" FORCE)
 
@@ -85,17 +85,19 @@ string(SHA256 _original_sha "${_header}")
 if(NOT _original_sha STREQUAL "98a8a1cb24f51b893b4343c4c552e363d9bc90ee7a611c05f7719c2479bec2b6")
     message(FATAL_ERROR "TESObjectREFR header changed; re-audit the non-VR ABI")
 endif()
-string(REGEX REPLACE
-    "\n[ \t]*SKYRIM_REL_VR_VIRTUAL void[ \t]+Unk_8C\\(void\\);[^\n]*"
-    "" _fixed "${_header}")
-string(SHA256 _fixed_sha "${_fixed}")
-if(NOT _fixed_sha STREQUAL "6ff59cd37693e301cc3282099a11b785f4a386334f0947adc37511afeabf690f")
-    message(FATAL_ERROR "Unexpected corrected TESObjectREFR header")
+if(NOT ENABLE_SKYRIM_VR)
+    string(REGEX REPLACE
+        "\n[ \t]*SKYRIM_REL_VR_VIRTUAL void[ \t]+Unk_8C\\(void\\);[^\n]*"
+        "" _fixed "${_header}")
+    string(SHA256 _fixed_sha "${_fixed}")
+    if(NOT _fixed_sha STREQUAL "6ff59cd37693e301cc3282099a11b785f4a386334f0947adc37511afeabf690f")
+        message(FATAL_ERROR "Unexpected corrected TESObjectREFR header")
+    endif()
+    set(_abi_include "${CMAKE_CURRENT_BINARY_DIR}/commonlib-abi/include")
+    file(MAKE_DIRECTORY "${_abi_include}/RE/T")
+    file(GENERATE OUTPUT "${_abi_include}/RE/T/TESObjectREFR.h" CONTENT "${_fixed}")
+    target_include_directories(CommonLibSSE BEFORE PUBLIC "$<BUILD_INTERFACE:${_abi_include}>")
 endif()
-set(_abi_include "${CMAKE_CURRENT_BINARY_DIR}/commonlib-abi/include")
-file(MAKE_DIRECTORY "${_abi_include}/RE/T")
-file(GENERATE OUTPUT "${_abi_include}/RE/T/TESObjectREFR.h" CONTENT "${_fixed}")
-target_include_directories(CommonLibSSE BEFORE PUBLIC "$<BUILD_INTERFACE:${_abi_include}>")
 
 # Plugin sources
 set(SOURCES

@@ -22,7 +22,7 @@ namespace SkyrimMCP::NPCManager {
         auto* processLists = RE::ProcessLists::GetSingleton();
         if (!processLists) return {{"error", "Process lists not available"}};
 
-        for (auto& actorHandle : processLists->highActorHandles) {
+        for (const auto& actorHandle : processLists->highActorHandles) {
             auto actorPtr = actorHandle.get();
             if (!actorPtr) continue;
 
@@ -199,7 +199,7 @@ namespace SkyrimMCP::NPCManager {
 
         json followers = json::array();
 
-        for (auto& actorHandle : processLists->highActorHandles) {
+        for (const auto& actorHandle : processLists->highActorHandles) {
             auto actorPtr = actorHandle.get();
             if (!actorPtr) continue;
 
@@ -380,7 +380,7 @@ namespace SkyrimMCP::NPCManager {
         json result;
 
         // Check for targeted object/actor
-        auto targetHandle = pickData->target;
+        const auto targetHandle = pickData->GetActiveTarget();
         auto targetPtr = targetHandle.get();
         if (targetPtr) {
             auto* ref = targetPtr.get();

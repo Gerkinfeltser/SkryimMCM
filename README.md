@@ -52,6 +52,15 @@ Claude Desktop <--stdio/MCP--> C# MCP Server <--named pipe--> SKSE Plugin (insid
 
 This branch is not an installed or runtime-certified release. VR, future 1.7.x versions, and older runtimes that metadata may permit loading are not covered by its support claim. Installation and game testing require separate authorization; loader acceptance is not evidence of compatibility.
 
+## VR candidate (untested)
+
+Offline candidate only; VR compatibility is not established. DLL: `SkyrimMCPPlugin/build/vr-candidate/Release/SkyrimMCPPlugin.dll` (build directory: `SkyrimMCPPlugin/build/vr-candidate`), SHA-256 `a844ebfacbd7cf8ec2b30ff7d8ca70dba7e1f26db81292a332fca65edfd5330b`.
+
+Required target stack: SkyrimVR 1.4.15, SKSEVR 2.0.12, and VR Address Library CSV 0.194 installed under `Data/SKSE/Plugins`. Candidate PE inspection: x64 DLL; exports `SKSEPlugin_Load`, `SKSEPlugin_Query`, `SKSEPlugin_Version`; no `openvr_api.dll` import. Generated plugin metadata selects Address Library compatibility; VR CSV resolution and runtime loading remain unverified.
+
+VR limitations: console tools and God Mode return unavailable errors through `Helpers::IsVRBindingUnavailable()`; perks report base-only with `complete: false`; crosshair targeting uses `GetActiveTarget()` priority left controller > right controller > headset. Complete the owner harness checklist in `openspec/changes/add-skyrim-vr-support/tasks.md`, section 6, before making any VR compatibility claim.
+
+
 ## Installation
 
 1. Extract the `Data` folder into your Skyrim directory (or install via MO2/Vortex)

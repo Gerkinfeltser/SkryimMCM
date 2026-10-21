@@ -20,7 +20,7 @@ namespace SkyrimMCP::CombatAnalysis {
         auto* group = player->GetCombatGroup();
         if (group) {
             json targets = json::array();
-            for (auto& target : group->targets) {
+            for (const auto& target : group->targets) {
                 auto targetPtr = target.targetHandle.get();
                 if (!targetPtr) continue;
                 auto* actor = targetPtr.get();
@@ -43,7 +43,7 @@ namespace SkyrimMCP::CombatAnalysis {
             result["targetCount"] = targets.size();
 
             json allies = json::array();
-            for (auto& member : group->members) {
+            for (const auto& member : group->members) {
                 auto memberPtr = member.memberHandle.get();
                 if (!memberPtr) continue;
                 auto* actor = memberPtr.get();
@@ -108,7 +108,7 @@ namespace SkyrimMCP::CombatAnalysis {
         auto playerPos = player->GetPosition();
         json threats = json::array();
 
-        for (auto& actorHandle : processLists->highActorHandles) {
+        for (const auto& actorHandle : processLists->highActorHandles) {
             auto actorPtr = actorHandle.get();
             if (!actorPtr) continue;
 

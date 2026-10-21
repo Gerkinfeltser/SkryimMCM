@@ -391,26 +391,29 @@ namespace SkyrimMCP::PlayerQueries {
         if (!player) return {{"error", "Player not available"}};
 
         json perks = json::array();
+        const bool isVR = REL::Module::IsVR();
 
-        // Get runtime-added perks (everything gained during gameplay)
-        try {
-            auto& runtimeData = player->GetPlayerRuntimeData();
-            for (auto* perkData : runtimeData.addedPerks) {
-                if (!perkData || !perkData->perk) continue;
-                try {
-                    json p;
-                    p["formId"] = std::format("{:08X}", perkData->perk->GetFormID());
-                    p["name"] = perkData->perk->GetName();
-                    p["rank"] = perkData->currentRank;
-                    p["source"] = "runtime";
-                    perks.push_back(p);
-                } catch (...) {
-                    continue;
+        // Get runtime-added perks only from the validated flat layout.
+        if (!isVR) {
+            try {
+                auto& runtimeData = player->GetPlayerRuntimeData();
+                for (auto* perkData : runtimeData.addedPerks) {
+                    if (!perkData || !perkData->perk) continue;
+                    try {
+                        json p;
+                        p["formId"] = std::format("{:08X}", perkData->perk->GetFormID());
+                        p["name"] = perkData->perk->GetName();
+                        p["rank"] = perkData->currentRank;
+                        p["source"] = "runtime";
+                        perks.push_back(p);
+                    } catch (...) {
+                        continue;
+                    }
                 }
+            } catch (...) {
+                // Fallback: try base TESNPC perk list if runtime data access fails
+                SKSE::log::warn("Failed to access runtime perks, falling back to base perks");
             }
-        } catch (...) {
-            // Fallback: try base TESNPC perk list if runtime data access fails
-            SKSE::log::warn("Failed to access runtime perks, falling back to base perks");
         }
 
         // Also get base perks from TESNPC (starting perks from race/class)
@@ -444,6 +447,11 @@ namespace SkyrimMCP::PlayerQueries {
                     }
                 }
             }
+        }
+
+        if (isVR) {
+            return {{"perks", perks}, {"count", perks.size()}, {"complete", false},
+                    {"incompleteReason", "VR runtime-added perk layout is not validated; only base perks are available"}};
         }
 
         return {{"perks", perks}, {"count", perks.size()}};
@@ -891,6 +899,10 @@ namespace SkyrimMCP::PlayerQueries {
     }
 
     json ToggleGodMode() {
+        if (Helpers::IsVRBindingUnavailable()) {
+            return {{"error", "God Mode is unavailable in VR: engine binding is not validated"}};
+        }
+
         REL::Relocation<bool*> godMode{ RELOCATION_ID(517711, 404238) };
         *godMode = !*godMode;
         return {{"godMode", *godMode}};
